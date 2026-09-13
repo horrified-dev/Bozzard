@@ -16,6 +16,7 @@ pub struct AssetBrowser {
     selected_shader: Option<std::path::PathBuf>,
     show_details: bool,
     thumbnails: HashMap<String, Thumbnail>,
+    meshes: HashMap<String, (u64, MeshPreview)>,
     catalog_revision: u64,
 }
 
@@ -171,7 +172,7 @@ impl AssetBrowser {
                 });
         }
         self.prune_thumbnails(editor);
-        let assets = snapshots(editor);
+        let assets = snapshots(editor, &mut self.meshes);
         if self
             .selected
             .as_ref()
@@ -495,33 +496,55 @@ impl AssetBrowser {
             }
             Ok(mut paths) => {
                 paths.sort();
-                for path in paths.iter().filter(|p| {
-                    p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
-                        n.ends_with(".blueprint.json") && n.to_lowercase().contains(&query)
+                let shown: Vec<_> = paths
+                    .iter()
+                    .filter(|p| {
+                        p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+                            n.ends_with(".blueprint.json") && n.to_lowercase().contains(&query)
+                        })
                     })
-                }) {
-                    let name = path.file_name().unwrap().to_string_lossy();
-                    let response = ui.add_enabled(editor.play.is_none(), egui::Button::selectable(self.selected_blueprint.as_ref() == Some(path), format!("◇ {name}")))
-                        .on_hover_text(format!("{}\nDouble-click to attach an independent copy · Delete removes the project file", path.display()));
-                    if response.clicked() || response.secondary_clicked() {
-                        self.selected_blueprint = Some(path.clone());
-                    }
-                    if response.double_clicked() && editing {
-                        output.blueprint_path = Some(path.clone());
-                    }
-                    response.context_menu(|ui| {
-                        if ui
-                            .add_enabled(
-                                editor.play.is_none(),
-                                egui::Button::new("Delete from project…"),
-                            )
-                            .clicked()
-                        {
-                            self.request_delete(DeleteTarget::Blueprint(path.clone()), editor);
-                            ui.close();
+                    .collect();
+                let columns = (ui.available_width() / 112.0).floor().max(1.0) as usize;
+                egui::Grid::new("blueprint-grid")
+                    .num_columns(columns)
+                    .spacing(Vec2::new(8.0, 8.0))
+                    .show(ui, |ui| {
+                        for (index, path) in shown.iter().enumerate() {
+                            let response = self.graph_tile(
+                                ui,
+                                path,
+                                "Blueprint",
+                                GraphIcon::Blueprint,
+                                self.selected_blueprint.as_ref() == Some(*path),
+                            );
+                            if response.clicked() || response.secondary_clicked() {
+                                self.selected_blueprint = Some((*path).clone());
+                            }
+                            if response.double_clicked() && editing {
+                                output.blueprint_path = Some((*path).clone());
+                            }
+                            response
+                                .on_hover_text(format!(
+                                    "{}\nDouble-click to attach an independent copy · Right-click for actions",
+                                    path.display()
+                                ))
+                                .context_menu(|ui| {
+                                    if ui
+                                        .add_enabled(
+                                            editor.play.is_none(),
+                                            egui::Button::new("Delete from project…"),
+                                        )
+                                        .clicked()
+                                    {
+                                        self.request_delete(DeleteTarget::Blueprint((*path).clone()), editor);
+                                        ui.close();
+                                    }
+                                });
+                            if (index + 1) % columns == 0 {
+                                ui.end_row();
+                            }
                         }
                     });
-                }
                 if paths.is_empty() {
                     ui.weak("Save graphs here using Blueprint Editor → Save graph.");
                 }
@@ -555,31 +578,42 @@ impl AssetBrowser {
             }
             Ok(mut paths) => {
                 paths.sort();
-                for path in paths.iter().filter(|p| {
-                    p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
-                        n.ends_with(".shadergraph.json") && n.to_lowercase().contains(&query)
+                let shown: Vec<_> = paths
+                    .iter()
+                    .filter(|p| {
+                        p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+                            n.ends_with(".shadergraph.json") && n.to_lowercase().contains(&query)
+                        })
                     })
-                }) {
-                    let name = path.file_name().unwrap().to_string_lossy();
-                    let response = ui
-                        .add_enabled(
-                            editor.play.is_none(),
-                            egui::Button::selectable(
-                                self.selected_shader.as_ref() == Some(path),
-                                format!("◈ {name}"),
-                            ),
-                        )
-                        .on_hover_text(format!(
-                            "{}\nDouble-click to attach a copy to the selected object",
-                            path.display()
-                        ));
-                    if response.clicked() || response.secondary_clicked() {
-                        self.selected_shader = Some(path.clone());
-                    }
-                    if response.double_clicked() && editing {
-                        output.shader_path = Some(path.clone());
-                    }
-                }
+                    .collect();
+                let columns = (ui.available_width() / 112.0).floor().max(1.0) as usize;
+                egui::Grid::new("shader-grid")
+                    .num_columns(columns)
+                    .spacing(Vec2::new(8.0, 8.0))
+                    .show(ui, |ui| {
+                        for (index, path) in shown.iter().enumerate() {
+                            let response = self.graph_tile(
+                                ui,
+                                path,
+                                "Shader graph",
+                                GraphIcon::Shader,
+                                self.selected_shader.as_ref() == Some(*path),
+                            );
+                            if response.clicked() || response.secondary_clicked() {
+                                self.selected_shader = Some((*path).clone());
+                            }
+                            if response.double_clicked() && editing {
+                                output.shader_path = Some((*path).clone());
+                            }
+                            response.on_hover_text(format!(
+                                "{}\nDouble-click to attach a copy to the selected object",
+                                path.display()
+                            ));
+                            if (index + 1) % columns == 0 {
+                                ui.end_row();
+                            }
+                        }
+                    });
                 if paths.is_empty() {
                     ui.weak("Select an object, use Inspector → SHADER GRAPH → Save graph to create files here.");
                 }
@@ -603,6 +637,13 @@ impl AssetBrowser {
             self.thumbnails.clear();
             self.catalog_revision = editor.asset_revision();
         }
+        self.meshes.retain(|id, (revision, _)| {
+            editor
+                .assets
+                .handle(id)
+                .and_then(|handle| editor.assets.get(handle))
+                .is_some_and(|entry| entry.revision() == *revision)
+        });
         self.thumbnails.retain(|id, thumbnail| {
             editor
                 .assets
@@ -610,6 +651,61 @@ impl AssetBrowser {
                 .and_then(|handle| editor.assets.get(handle))
                 .is_some_and(|entry| entry.revision() == thumbnail.asset_revision)
         });
+    }
+
+    /// Card tile for blueprint / shader-graph files, matching the model and
+    /// prefab tiles' look and interaction (click select, double-click attach).
+    fn graph_tile(
+        &mut self,
+        ui: &mut egui::Ui,
+        path: &std::path::Path,
+        kind: &str,
+        icon: GraphIcon,
+        selected: bool,
+    ) -> egui::Response {
+        const TILE: Vec2 = Vec2::new(96.0, 92.0);
+        let file = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let name = file
+            .strip_suffix(".blueprint.json")
+            .or_else(|| file.strip_suffix(".shadergraph.json"))
+            .unwrap_or(file);
+        egui::Frame::new()
+            .inner_margin(4)
+            .corner_radius(2)
+            .stroke(Stroke::new(
+                1.0,
+                if selected {
+                    super::theme::ACCENT
+                } else {
+                    Color32::TRANSPARENT
+                },
+            ))
+            .fill(if selected {
+                Color32::from_rgb(57, 51, 41)
+            } else {
+                Color32::TRANSPARENT
+            })
+            .show(ui, |ui| {
+                ui.vertical(|ui| {
+                    ui.set_width(TILE.x);
+                    ui.set_min_height(TILE.y);
+                    let preview =
+                        ui.allocate_exact_size(Vec2::new(TILE.x, 64.0), egui::Sense::click());
+                    let icon_painter = ui.painter_at(preview.0);
+                    icon_painter.rect_filled(preview.0, 2.0, Color32::from_gray(25));
+                    match icon {
+                        GraphIcon::Blueprint => draw_blueprint_icon(&icon_painter, preview.0),
+                        GraphIcon::Shader => draw_shader_icon(&icon_painter, preview.0),
+                    }
+                    let name = ui
+                        .add(egui::Button::selectable(selected, name).truncate())
+                        .on_hover_text(file);
+                    ui.small(kind);
+                    preview.1 | name
+                })
+                .inner
+            })
+            .inner
     }
 
     fn tile(
@@ -917,7 +1013,10 @@ fn set_error(output: &mut AssetBrowserOutput, error: anyhow::Error) {
     });
 }
 
-fn snapshots(editor: &Editor) -> Vec<AssetSnapshot> {
+fn snapshots(
+    editor: &Editor,
+    mesh_cache: &mut HashMap<String, (u64, MeshPreview)>,
+) -> Vec<AssetSnapshot> {
     let users = editor.scene().asset_users();
     editor
         .assets
@@ -926,7 +1025,18 @@ fn snapshots(editor: &Editor) -> Vec<AssetSnapshot> {
             let source = editor.scene().assets.get(&entry.id)?;
             let (image, mesh) = match entry.data() {
                 Some(AssetData::Image(image)) => (Some((image.width, image.height)), None),
-                Some(AssetData::Mesh(mesh)) => (None, Some(sample_mesh(mesh))),
+                Some(AssetData::Mesh(mesh)) => {
+                    let revision = entry.revision();
+                    let sampled = match mesh_cache.get(&entry.id) {
+                        Some((r, preview)) if *r == revision => preview.clone(),
+                        _ => {
+                            let preview = sample_mesh(mesh);
+                            mesh_cache.insert(entry.id.clone(), (revision, preview.clone()));
+                            preview
+                        }
+                    };
+                    (None, Some(sampled))
+                }
                 Some(AssetData::Prefab(_)) | None => (None, None),
             };
             Some(AssetSnapshot {
@@ -951,10 +1061,21 @@ fn snapshots(editor: &Editor) -> Vec<AssetSnapshot> {
 /// an imported mesh. Invalid triangles are ignored here and remain reported by
 /// the asset loader itself.
 fn sample_mesh(mesh: &bozzard_assets::MeshData) -> MeshPreview {
+    const MAX_PREVIEW_TRIANGLES: usize = 400;
+    // Even stride over the whole index buffer: first-N sampling renders one
+    // magnified patch (the sphere models' first tris are a tiny cap) or a
+    // single edge-on face strip (rounded boxes), not the object.
+    let triangle_count = mesh.indices.len() / 3;
+    let stride = triangle_count.div_ceil(MAX_PREVIEW_TRIANGLES).max(1);
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     let mut remap = HashMap::new();
-    for triangle in mesh.indices.chunks_exact(3).take(160) {
+    for triangle in mesh
+        .indices
+        .chunks_exact(3)
+        .step_by(stride * 3)
+        .take(MAX_PREVIEW_TRIANGLES)
+    {
         let mut local = [0; 3];
         let mut valid = true;
         for (slot, &index) in triangle.iter().enumerate() {
@@ -1034,6 +1155,67 @@ fn matches_filter(filter: AssetFilter, kind: AssetKind) -> bool {
         || matches!((filter, kind), (AssetFilter::Prefabs, AssetKind::Prefab))
 }
 
+/// Mini node-graph glyph used by prefab tiles.
+fn draw_node_graph_icon(painter: &egui::Painter, rect: Rect, color: Color32) {
+    let c = rect.center();
+    for (dx, dy, size) in [(0.0, -12.0, 22.0), (-22.0, 18.0, 14.0), (22.0, 18.0, 14.0)] {
+        let center = c + Vec2::new(dx, dy);
+        if dy > 0.0 {
+            painter.line_segment([c, center], egui::Stroke::new(1.5, color));
+        }
+        painter.rect_filled(
+            Rect::from_center_size(center, Vec2::splat(size)),
+            3.0,
+            color,
+        );
+    }
+}
+
+/// Which graph-file glyph to draw in a tile.
+#[derive(Clone, Copy)]
+enum GraphIcon {
+    /// Lightning bolt in ember orange — blueprints drive object behavior.
+    Blueprint,
+    /// Stacked sine waves in teal — shader graphs write surface math.
+    Shader,
+}
+
+fn draw_blueprint_icon(painter: &egui::Painter, rect: Rect) {
+    let color = Color32::from_rgb(235, 148, 74);
+    let c = rect.center();
+    let s = 15.0;
+    let pts: Vec<egui::Pos2> = [
+        [0.2, -1.0],
+        [0.62, -1.0],
+        [-0.12, -0.14],
+        [0.3, -0.14],
+        [-0.52, 1.0],
+        [-0.18, 0.08],
+        [-0.66, 0.08],
+    ]
+    .iter()
+    .map(|p| egui::pos2(c.x + p[0] * s, c.y + p[1] * s))
+    .collect();
+    painter.add(egui::Shape::convex_polygon(pts, color, Stroke::NONE));
+}
+
+fn draw_shader_icon(painter: &egui::Painter, rect: Rect) {
+    let color = Color32::from_rgb(98, 192, 208);
+    let c = rect.center();
+    for row in -1..=1 {
+        let y = c.y + row as f32 * 11.0;
+        let pts: Vec<egui::Pos2> = (-6..=6)
+            .map(|i| {
+                egui::pos2(
+                    c.x + i as f32 * 3.8,
+                    y + (i as f32 / 6.0 * std::f32::consts::PI).sin() * 4.5,
+                )
+            })
+            .collect();
+        painter.add(egui::Shape::line(pts, Stroke::new(2.4, color)));
+    }
+}
+
 fn draw_preview(
     ui: &egui::Ui,
     rect: Rect,
@@ -1044,19 +1226,7 @@ fn draw_preview(
     painter.rect_filled(rect, 2.0, Color32::from_gray(25));
     match (asset.kind, thumbnail, asset.mesh.as_ref()) {
         (AssetKind::Prefab, _, _) => {
-            let c = rect.center();
-            let color = Color32::from_rgb(178, 155, 244);
-            for (dx, dy, size) in [(0.0, -12.0, 22.0), (-22.0, 18.0, 14.0), (22.0, 18.0, 14.0)] {
-                let center = c + Vec2::new(dx, dy);
-                if dy > 0.0 {
-                    painter.line_segment([c, center], egui::Stroke::new(1.5, color));
-                }
-                painter.rect_filled(
-                    Rect::from_center_size(center, Vec2::splat(size)),
-                    3.0,
-                    color,
-                );
-            }
+            draw_node_graph_icon(&painter, rect, Color32::from_rgb(178, 155, 244));
         }
         (AssetKind::Image, Some(texture), _) => {
             let size = texture.size_vec2();
@@ -1114,7 +1284,6 @@ fn draw_mesh_preview(painter: &egui::Painter, rect: Rect, vertices: &[[f32; 8]],
         * 0.88;
     let mut triangles: Vec<_> = indices
         .chunks_exact(3)
-        .take(160)
         .filter_map(|t| {
             let p = [
                 *projected.get(t[0] as usize)?,
@@ -1137,21 +1306,79 @@ fn draw_mesh_preview(painter: &egui::Painter, rect: Rect, vertices: &[[f32; 8]],
                 rect.center().y - (p.y - center.y) * scale,
             )
         });
-        painter.add(egui::Shape::convex_polygon(
-            points.to_vec(),
-            Color32::from_rgb(
-                (188.0 * light) as u8,
-                (177.0 * light) as u8,
-                (152.0 * light) as u8,
-            ),
-            Stroke::new(0.35, Color32::from_rgb(210, 197, 168)),
-        ));
+        // Raw mesh, not Shape::convex_polygon: the path tessellator's miter
+        // join explodes on sharp projected corners (thin slivers from any
+        // edge-on triangle) and throws feather vertices across the tile.
+        let mut shape = egui::Mesh::default();
+        for &p in &points {
+            shape.colored_vertex(
+                p,
+                Color32::from_rgb(
+                    (188.0 * light) as u8,
+                    (177.0 * light) as u8,
+                    (152.0 * light) as u8,
+                ),
+            );
+        }
+        shape.add_triangle(0, 1, 2);
+        painter.add(egui::Shape::Mesh(std::sync::Arc::new(shape)));
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mesh_preview_samples_the_whole_mesh_not_just_the_first_triangles() {
+        // 2000 triangles: the first 500 huddle in one corner, the rest spread
+        // across the unit cube. First-N sampling would miss everything else.
+        let mut vertices: Vec<[f32; 8]> = (0..500)
+            .map(|i| {
+                let f = i as f32 * 0.0001;
+                [f, f, f, 0., 1., 0., 0., 0.]
+            })
+            .collect();
+        let mut indices: Vec<u32> = Vec::new();
+        for i in 0..500u32 {
+            indices.extend([i, i, i]);
+        }
+        let spread = [
+            [0., 0., 0.],
+            [1., 0., 0.],
+            [0., 1., 0.],
+            [0., 0., 1.],
+            [1., 1., 0.],
+            [1., 0., 1.],
+            [0., 1., 1.],
+            [1., 1., 1.],
+        ];
+        for corner in spread {
+            let base = vertices.len() as u32;
+            vertices.push([corner[0], corner[1], corner[2], 0., 1., 0., 0., 0.]);
+            vertices.push([corner[0] + 0.01, corner[1], corner[2], 0., 1., 0., 0., 0.]);
+            vertices.push([corner[0], corner[1] + 0.01, corner[2], 0., 1., 0., 0., 0.]);
+            indices.extend([base, base + 1, base + 2]);
+        }
+        let mesh = bozzard_assets::MeshData {
+            vertices,
+            indices,
+            parts: vec![],
+            warnings: vec![],
+        };
+        let preview = sample_mesh(&mesh);
+        let xs: Vec<_> = preview.vertices.iter().map(|v| v[0]).collect();
+        let ys: Vec<_> = preview.vertices.iter().map(|v| v[1]).collect();
+        let zs: Vec<_> = preview.vertices.iter().map(|v| v[2]).collect();
+        // Bounded sample: stride keeps the whole mesh represented, capped at 400.
+        assert_eq!(preview.indices.len() / 3, 85);
+        let peak = |values: &[f32]| values.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+        assert!(
+            peak(&xs).max(peak(&zs)) > 0.9,
+            "sample must reach the far corners, not only the corner cluster"
+        );
+        assert!(peak(&ys) > 0.9);
+    }
 
     #[test]
     fn blueprints_folder_lists_saved_graphs_without_mutating_scene() {
@@ -1257,7 +1484,7 @@ mod tests {
                 );
             }
         }
-        let asset = snapshots(&editor).remove(0);
+        let asset = snapshots(&editor, &mut HashMap::new()).remove(0);
         assert!(matches!(asset.state, LoadState::Ready));
         for editing in [false, true] {
             let ctx = egui::Context::default();
@@ -1306,7 +1533,7 @@ mod prefab_tests {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../examples/demo/scenes/prefab-lab.json");
         let mut editor = Editor::open(&path).unwrap();
-        let asset = snapshots(&editor)
+        let asset = snapshots(&editor, &mut HashMap::new())
             .into_iter()
             .find(|a| a.kind == AssetKind::Prefab)
             .unwrap();
