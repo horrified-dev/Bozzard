@@ -29,6 +29,7 @@ The current import slice supports static OBJ and glTF/GLB geometry, material dep
 - Implemented: first linked prefab workflow with expanded scene instances, component overrides, apply, refresh, and unpack; see [prefab workflow and limits](prefabs.md).
 
 - Implemented: optional typed gameplay Blueprints with a dedicated node pane, portable graph files, ordered object/prefab attachments, and a shared headless runtime; see [Blueprints](blueprints.md).
+- Implemented: per-object shader node graphs that compile to WGSL surface overrides (Base Color/Metallic/Roughness/Emissive/Alpha/Normal) over the existing material maps, with a dedicated editor pane and portable graph files; see [Shader Node Editor](shader-editor.md).
 
 Remaining editor extensions: generic component reflection, arbitrary tab docking, and production gizmo ergonomics.
 

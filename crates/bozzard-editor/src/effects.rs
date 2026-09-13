@@ -116,6 +116,7 @@ impl Editor {
             parent: None,
             material: None,
             blueprints: Vec::new(),
+            shader_graph: None,
             light: None,
             camera: None,
             drawable: None,

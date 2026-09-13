@@ -123,6 +123,7 @@ fn model_material_checks(gpu: &Gpu) -> Result<()> {
         uv_scale: [1.; 2],
         texture: TextureKind::White,
         lit: false,
+        shader: None,
     };
     // Extreme minification must converge to the linear-light average, rather
     // than aliasing between black/white or averaging sRGB bytes (about 55).
@@ -304,6 +305,7 @@ fn scene_checks(gpu: &Gpu, options: &Options) -> Result<()> {
         uv_scale: [1.0; 2],
         texture: TextureKind::Checker,
         lit: false,
+        shader: None,
     };
     let scene = RenderScene {
         particles: Vec::new(),
@@ -484,6 +486,7 @@ fn asset_checks(gpu: &Gpu, renderer: &mut SceneRenderer, options: &Options) -> R
                 uv_scale: [1.0; 2],
                 texture: TextureKind::Imported("test-palette".into()),
                 lit: false,
+                shader: None,
             },
         }],
     };

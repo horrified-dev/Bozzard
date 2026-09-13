@@ -88,6 +88,7 @@ fn lit_particles_soft_depth_trails_ordering_and_resize_budget() -> anyhow::Resul
             texture: TextureKind::White,
             uv_scale: [1.; 2],
             surface_overrides: Default::default(),
+            shader: None,
         },
     }];
     let hidden = capture(&gpu, &mut renderer, &scene, size, false)?;

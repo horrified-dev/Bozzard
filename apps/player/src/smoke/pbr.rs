@@ -73,6 +73,7 @@ impl Fixture<'_> {
                     uv_scale: [1.; 2],
                     texture: TextureKind::White,
                     lit: self.lit,
+                    shader: None,
                 },
             }],
         };

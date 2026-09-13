@@ -25,6 +25,7 @@ pub(super) fn checks(gpu: &Gpu) -> Result<()> {
                 uv_scale: [128.; 2],
                 texture: TextureKind::White,
                 lit: false,
+                shader: None,
             },
         }],
     };

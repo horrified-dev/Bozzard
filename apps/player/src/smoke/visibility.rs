@@ -14,6 +14,7 @@ pub(super) fn checks(gpu: &Gpu) -> Result<()> {
             texture: TextureKind::White,
             uv_scale: [1.; 2],
             lit: true,
+            shader: None,
         },
     };
     let scene = RenderScene {

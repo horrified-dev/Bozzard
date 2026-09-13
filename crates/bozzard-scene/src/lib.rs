@@ -9,6 +9,7 @@ pub use surface::SurfaceMaterialOverride;
 pub mod blueprint;
 mod blueprint_runtime;
 mod runtime_prefabs;
+pub mod shader_graph;
 pub use blueprint::{Blueprint, BlueprintAttachment};
 pub use blueprint_runtime::{BlueprintHidden, BlueprintRuntime};
 mod fog;
@@ -319,6 +320,9 @@ pub struct Object {
     pub material: Option<Material>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub blueprints: Vec<BlueprintAttachment>,
+    /// Embedded surface shader graph; applies to the drawable's whole material.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shader_graph: Option<shader_graph::ShaderGraph>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub light: Option<Light>,
     pub id: String,
@@ -478,6 +482,11 @@ impl Scene {
                     .graph
                     .validate()
                     .with_context(|| format!("blueprint on '{}'", object.id))?;
+            }
+            if let Some(graph) = &object.shader_graph {
+                graph
+                    .validate()
+                    .with_context(|| format!("shader graph on '{}'", object.id))?;
             }
             ensure!(!object.id.trim().is_empty(), "object ID is empty");
             ensure!(
@@ -846,6 +855,7 @@ impl SceneInstance {
         let view_projection = projection * matrices[camera_id].inverse();
         let mut objects = Vec::new();
         let mut object_ids = Vec::new();
+        let mut shader_graphs = Vec::new();
         let mut texts = Vec::new();
         for (id, entity) in &self.entities {
             if let Some(text) = world.get::<TextRendering>(*entity)
@@ -874,6 +884,11 @@ impl SceneInstance {
                 let mut hasher = std::collections::hash_map::DefaultHasher::new();
                 entity.hash(&mut hasher);
                 object_ids.push(hasher.finish().max(1));
+                shader_graphs.push(
+                    world
+                        .get::<shader_graph::ShaderGraph>(*entity)
+                        .map(|g| std::sync::Arc::new(g.clone())),
+                );
                 objects.push((matrices[id], drawable));
             }
         }
@@ -924,6 +939,7 @@ impl SceneInstance {
             view_projection,
             objects,
             object_ids,
+            shader_graphs,
             texts,
         })
     }
@@ -949,6 +965,7 @@ impl SceneInstance {
             object.gravity = world.get::<Gravity>(entity).copied();
             object.player_controller = world.get::<PlayerController>(entity).cloned();
             object.trigger = world.get::<Trigger>(entity).cloned();
+            object.shader_graph = world.get::<shader_graph::ShaderGraph>(entity).cloned();
         }
         scene.validate()?;
         Ok(scene)
@@ -958,6 +975,8 @@ impl SceneInstance {
 pub struct SceneView {
     /// Runtime identities in the same order as objects; never serialized.
     pub object_ids: Vec<u64>,
+    /// Surface shader graph per object, same order as `objects`.
+    pub shader_graphs: Vec<Option<std::sync::Arc<shader_graph::ShaderGraph>>>,
     pub particles: Vec<Particle>,
     pub display_time: f32,
     pub texts: Vec<(Mat4, TextRendering)>,
@@ -987,7 +1006,8 @@ impl Object {
             mesh_collider,
             player_controller,
             trigger,
-            spin
+            spin,
+            shader_graph
         );
         if self.gravity.is_some() {
             world.insert(entity, GravityState::default())?;
@@ -1117,6 +1137,7 @@ mod tests {
             particle_emitter: None,
             material: None,
             blueprints: Vec::new(),
+            shader_graph: None,
             light: None,
             id: id.into(),
             name: id.into(),

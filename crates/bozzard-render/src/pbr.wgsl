@@ -4,7 +4,7 @@ struct ObjectUniform {
     sun: vec4<f32>, sun_color: vec4<f32>, ambient_color: vec4<f32>,
     surface_factors: vec4<f32>,
     fog_color: vec4<f32>, fog_density: vec4<f32>, fog_height: vec4<f32>,
-    previous_mvp: mat4x4<f32>,
+    previous_mvp: mat4x4<f32>, misc: vec4<f32>, // x = elapsed seconds for shader graphs
 };
 struct MaterialUniform { factors: vec4<f32>, emissive: vec4<f32> };
 @group(0) @binding(0) var<uniform> object: ObjectUniform;
@@ -44,17 +44,44 @@ struct VertexOutput {
     out.emissive_uv = emissive_uv * object.parameters.xy;
     return out;
 }
-@fragment fn fs_main(in: VertexOutput, @builtin(front_facing) front: bool) -> SurfaceOutput {
-    let texel = textureSample(color_texture,color_sampler,in.uv);
-    let mr = textureSample(mr_texture,mr_sampler,in.mr_uv);
-    let sampled_normal = textureSample(normal_texture,normal_sampler,in.normal_uv).xyz * 2.0 - 1.0;
-    let ao = mix(1.0,textureSample(ao_texture,ao_sampler,in.ao_uv).r,material.factors.w);
-    let emissive = textureSample(emissive_texture,emissive_sampler,in.emissive_uv).rgb * material.emissive.xyz;
-    let facing = front == (object.viewport.z > 0.0);
-    if !facing && material.emissive.w < 0.5 { discard; }
-    let alpha = texel.a * object.tint.a;
-    if alpha <= 0.00001 || alpha < object.parameters.w { discard; }
+/// Surface parameters shared by stock materials and shader graph modules.
+/// `normal` is the final world-space normal; shader graphs override it directly.
+struct SurfaceParams {
+    base: vec3<f32>, metallic: f32, roughness: f32,
+    emissive: vec3<f32>, alpha: f32, normal: vec3<f32>, ao: f32,
+};
+
+fn default_material_surface(uv: vec2<f32>, normal_uv: vec2<f32>, mr_uv: vec2<f32>, ao_uv: vec2<f32>, emissive_uv: vec2<f32>, world_normal: vec3<f32>, tangent: vec4<f32>, world: vec3<f32>, view: vec3<f32>, front: bool, time: f32) -> SurfaceParams {
+    let texel = textureSample(color_texture,color_sampler,uv);
+    let mr = textureSample(mr_texture,mr_sampler,mr_uv);
+    let sampled_normal = textureSample(normal_texture,normal_sampler,normal_uv).xyz * 2.0 - 1.0;
+    let ao = mix(1.0,textureSample(ao_texture,ao_sampler,ao_uv).r,material.factors.w);
+    let emissive = textureSample(emissive_texture,emissive_sampler,emissive_uv).rgb * material.emissive.xyz;
     let base = texel.rgb * object.tint.rgb;
+    let n = world_normal;
+    let t = normalize(tangent.xyz - n * dot(n,tangent.xyz));
+    let b = cross(n,t) * tangent.w;
+    let mapped = normalize(vec3<f32>(sampled_normal.xy * material.factors.z, sampled_normal.z));
+    return SurfaceParams(
+        base,
+        clamp(select(material.factors.x, object.surface_factors.x, object.surface_factors.x >= 0.0) * mr.b,0.0,1.0),
+        clamp(select(material.factors.y, object.surface_factors.y, object.surface_factors.y >= 0.0) * mr.g,0.045,1.0),
+        emissive, texel.a * object.tint.a,
+        normalize(mat3x3<f32>(t,b,n) * mapped), ao,
+    );
+}
+
+@fragment fn fs_main(in: VertexOutput, @builtin(front_facing) front: bool) -> SurfaceOutput {
+    let facing = front == (object.viewport.z > 0.0);
+    let ndc = in.position.xy / object.viewport.xy * vec2<f32>(2.0,-2.0) + vec2<f32>(-1.0,1.0);
+    let near = object.inverse_view_projection * vec4<f32>(ndc,0.0,1.0);
+    let view_ray = near.xyz / near.w - in.world;
+    let view = view_ray / max(length(view_ray),0.000001);
+    let params = default_material_surface(in.uv, in.normal_uv, in.mr_uv, in.ao_uv, in.emissive_uv, normalize(in.normal), in.tangent, in.world, view, front, object.misc.x);
+    if !facing && material.emissive.w < 0.5 { discard; }
+    if params.alpha <= 0.00001 || params.alpha < object.parameters.w { discard; }
+    let alpha = params.alpha;
+    let base = params.base;
     if object.surface_factors.z > 0.5 {
         let effect_normal = in.normal * select(-1.0, 1.0, facing);
         let effect = demo_effect(base, effect_normal, in.uv, in.world);
@@ -62,20 +89,11 @@ struct VertexOutput {
         return surface_output(vec4<f32>(apply_fog(effect, in.world, in.position.xy), alpha),in.position,in.previous,in.normal,1.0,vec3<f32>(0),1.0,1.0);
     }
     if object.parameters.z < 0.5 { return surface_output(vec4<f32>(apply_fog(base, in.world, in.position.xy),alpha),in.position,in.previous,in.normal,1.0,vec3<f32>(0),1.0,0.0); }
-    var n = normalize(in.normal);
-    let t = normalize(in.tangent.xyz - n * dot(n,in.tangent.xyz));
-    let b = cross(n,t) * in.tangent.w;
-    let mapped = normalize(vec3<f32>(sampled_normal.xy * material.factors.z, sampled_normal.z));
-    n = normalize(mat3x3<f32>(t,b,n) * mapped);
+    var n = params.normal;
     if !facing { n = -n; }
-    // Unproject this pixel onto the near plane. The resulting view ray works for
-    // both perspective and orthographic cameras, including editor navigation.
-    let ndc = in.position.xy / object.viewport.xy * vec2<f32>(2.0,-2.0) + vec2<f32>(-1.0,1.0);
-    let near = object.inverse_view_projection * vec4<f32>(ndc,0.0,1.0);
-    let view_ray = near.xyz / near.w - in.world;
-    let v = view_ray / max(length(view_ray),0.000001);
-    let metallic = clamp(select(material.factors.x, object.surface_factors.x, object.surface_factors.x >= 0.0) * mr.b,0.0,1.0);
-    let roughness = clamp(select(material.factors.y, object.surface_factors.y, object.surface_factors.y >= 0.0) * mr.g,0.045,1.0);
+    let v = view;
+    let metallic = params.metallic;
+    let roughness = params.roughness;
     let nv = max(dot(n,v),0.0001);
     let f0 = mix(vec3<f32>(0.04),base,metallic);
     let shadow_normal = normalize(in.normal) * select(-1.0, 1.0, facing);
@@ -89,8 +107,8 @@ struct VertexOutput {
     }
     let ibl_diffuse = gi_diffuse(in.world,n)*base*(1.0-f0)*(1.0-metallic);
     let ibl_specular = specular_environment(reflect(-v,n),roughness,nv,f0);
-    let indirect = base*(1.0-metallic)*object.sun_color.w*object.ambient_color.rgb*ao + (ibl_diffuse+ibl_specular)*ao;
-    return surface_output(vec4<f32>(apply_fog(min(direct+indirect+emissive, vec3<f32>(60000.0)), in.world, in.position.xy),alpha),in.position,in.previous,n,roughness,f0,ao,0.0);
+    let indirect = base*(1.0-metallic)*object.sun_color.w*object.ambient_color.rgb*params.ao + (ibl_diffuse+ibl_specular)*params.ao;
+    return surface_output(vec4<f32>(apply_fog(min(direct+indirect+params.emissive, vec3<f32>(60000.0)), in.world, in.position.xy),alpha),in.position,in.previous,n,roughness,f0,params.ao,0.0);
 }
 
 fn direct_brdf(base: vec3<f32>, metallic: f32, roughness: f32, n: vec3<f32>, v: vec3<f32>, l: vec3<f32>) -> vec3<f32> {

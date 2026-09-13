@@ -48,6 +48,7 @@ fn object(mesh: MeshKind, scale: [f32; 3], position: [f32; 3]) -> DrawItem {
             uv_scale: [1.; 2],
             texture: TextureKind::White,
             lit: false,
+            shader: None,
         },
     }
 }

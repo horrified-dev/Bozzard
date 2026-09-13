@@ -318,6 +318,7 @@ mod tests {
                 uv_scale: [1.; 2],
                 texture: TextureKind::Text,
                 lit: false,
+                shader: None,
             },
         };
         scene.items.push(item.clone());

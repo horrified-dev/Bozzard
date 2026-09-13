@@ -35,6 +35,7 @@ fn quad(x: f32, z: f32, size: [f32; 2], color: [f32; 3]) -> DrawItem {
             texture: TextureKind::White,
             uv_scale: [1.; 2],
             surface_overrides: Default::default(),
+            shader: None,
         },
     }
 }

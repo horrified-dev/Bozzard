@@ -39,6 +39,7 @@ pub fn text_item(
             uv_scale: [1.; 2],
             texture: bozzard_render::TextureKind::Text,
             lit: false,
+            shader: None,
         },
     }
 }
@@ -156,3 +157,18 @@ pub fn upload(
 
 mod display;
 pub use display::{display_settings, particle_frame};
+
+/// Compile one scene shader graph to the renderer's surface-function source.
+/// The content hash of the generated WGSL keys the renderer's pipeline cache.
+pub fn shader_source(
+    graph: &bozzard_scene::shader_graph::ShaderGraph,
+) -> anyhow::Result<Arc<bozzard_render::ShaderSource>> {
+    use std::hash::{Hash, Hasher};
+    let surface = graph.surface_function()?;
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    surface.hash(&mut hasher);
+    Ok(Arc::new(bozzard_render::ShaderSource {
+        id: hasher.finish(),
+        surface,
+    }))
+}

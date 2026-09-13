@@ -114,6 +114,7 @@ pub(super) fn checks(gpu: &Gpu) -> Result<()> {
                     texture: TextureKind::White,
                     lit: false,
                     surface_overrides: Default::default(),
+                    shader: None,
                 },
             })
             .collect(),

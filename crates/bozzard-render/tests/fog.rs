@@ -129,6 +129,7 @@ fn fog_gpu_basic_pbr_distance_height_alpha_and_bypass() -> anyhow::Result<()> {
                 uv_scale: [1.; 2],
                 texture: TextureKind::White,
                 lit: true,
+                shader: None,
             },
         }],
     };

@@ -256,6 +256,7 @@ impl Editor {
         scene.objects.push(Object {
             particle_emitter: None,
             blueprints: Vec::new(),
+            shader_graph: None,
             light: None,
             id: id.clone(),
             material: None,
@@ -299,6 +300,7 @@ impl Editor {
         scene.objects.push(Object {
             particle_emitter: None,
             blueprints: Vec::new(),
+            shader_graph: None,
             id: id.clone(),
             material: None,
             mesh_collider: None,
@@ -452,6 +454,47 @@ impl Editor {
             .context("blueprint no longer exists")?;
         bozzard_demo::save_json(&attachment.graph.to_json()?, path)
     }
+    pub fn set_shader_graph(
+        &mut self,
+        object: &str,
+        shader_graph: Option<bozzard_scene::shader_graph::ShaderGraph>,
+    ) -> Result<()> {
+        let mut scene = self.scene.clone();
+        scene
+            .objects
+            .iter_mut()
+            .find(|o| o.id == object)
+            .context("shader graph owner no longer exists")?
+            .shader_graph = shader_graph;
+        self.apply("Edit shader graph", scene)
+    }
+    pub fn load_shader_graph(&mut self, object: &str, path: &Path) -> Result<()> {
+        use std::io::Read;
+        let mut json = String::new();
+        std::fs::File::open(path)?
+            .take(1024 * 1024 + 1)
+            .read_to_string(&mut json)?;
+        self.set_shader_graph(
+            object,
+            Some(bozzard_scene::shader_graph::ShaderGraph::from_json(&json)?),
+        )
+    }
+    pub fn save_shader_graph(&self, object: &str, path: &Path) -> Result<()> {
+        ensure!(
+            path.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.ends_with(".shadergraph.json")),
+            "use a .shadergraph.json filename"
+        );
+        let graph = self
+            .scene
+            .objects
+            .iter()
+            .find(|o| o.id == object)
+            .and_then(|o| o.shader_graph.as_ref())
+            .context("object has no shader graph")?;
+        bozzard_demo::save_json(&graph.to_json()?, path)
+    }
     pub fn start_play(&mut self) -> Result<()> {
         self.surface_selection = None;
         self.finish_gesture();
@@ -533,6 +576,7 @@ impl Editor {
         scene.objects.push(Object {
             particle_emitter: None,
             blueprints: Vec::new(),
+            shader_graph: None,
             light: None,
             id: id.clone(),
             material: None,
@@ -996,43 +1040,52 @@ pub fn extract(
             .objects
             .into_iter()
             .zip(view.object_ids)
-            .filter(|((_, d), _)| {
+            .zip(view.shader_graphs)
+            .filter(|(((_, d), _), _)| {
                 !matches!(d.mesh, Mesh::Surface { .. }) || assets.mesh_surface(&d.mesh).is_some()
             })
-            .map(|((model, d), motion_id)| DrawItem {
-                motion_id,
-                model,
-                mesh: match d.mesh {
-                    Mesh::Quad => MeshKind::Quad,
-                    Mesh::Cube => MeshKind::Cube,
-                    Mesh::Asset(id) => MeshKind::Imported(id),
-                    Mesh::Surface { asset, index, .. } => {
-                        MeshKind::ModelPart(asset, index as usize)
-                    }
-                },
-                material: Material {
-                    metallic: d.metallic,
-                    roughness: d.roughness,
-                    surface_overrides: d
-                        .material_overrides
-                        .into_iter()
-                        .map(|value| bozzard_render::SurfaceMaterialOverride {
-                            surface: value.surface,
-                            source: value.source,
-                            transform: value.transform.matrix(),
-                            texture: value.texture.map(render_texture),
-                            uv_scale: value.uv_scale,
-                            tint: value.tint,
-                            metallic: value.metallic,
-                            roughness: value.roughness,
-                        })
-                        .collect(),
-                    tint: d.color,
-                    uv_scale: d.uv_scale,
-                    lit: layer == Layer::ThreeD,
-                    texture: render_texture(d.texture),
-                },
+            .map(|(((model, d), motion_id), shader)| -> Result<DrawItem> {
+                Ok(DrawItem {
+                    motion_id,
+                    model,
+                    mesh: match d.mesh {
+                        Mesh::Quad => MeshKind::Quad,
+                        Mesh::Cube => MeshKind::Cube,
+                        Mesh::Asset(id) => MeshKind::Imported(id),
+                        Mesh::Surface { asset, index, .. } => {
+                            MeshKind::ModelPart(asset, index as usize)
+                        }
+                    },
+                    material: Material {
+                        metallic: d.metallic,
+                        roughness: d.roughness,
+                        surface_overrides: d
+                            .material_overrides
+                            .into_iter()
+                            .map(|value| bozzard_render::SurfaceMaterialOverride {
+                                surface: value.surface,
+                                source: value.source,
+                                transform: value.transform.matrix(),
+                                texture: value.texture.map(render_texture),
+                                uv_scale: value.uv_scale,
+                                tint: value.tint,
+                                metallic: value.metallic,
+                                roughness: value.roughness,
+                            })
+                            .collect(),
+                        tint: d.color,
+                        uv_scale: d.uv_scale,
+                        lit: layer == Layer::ThreeD,
+                        texture: render_texture(d.texture),
+                        shader: shader
+                            .as_deref()
+                            .map(bozzard_render_assets::shader_source)
+                            .transpose()?,
+                    },
+                })
             })
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
             .chain(
                 view.texts
                     .into_iter()

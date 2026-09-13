@@ -82,6 +82,7 @@ impl Editor {
                 drawable: Some(geometry),
                 material,
                 blueprints: Vec::new(),
+                shader_graph: None,
                 light: None,
                 camera: None,
                 spin: None,

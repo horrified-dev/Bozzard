@@ -6,10 +6,13 @@ pub enum Kind {
     Import,
     LoadBlueprint,
     SaveBlueprint,
+    LoadShaderGraph,
+    SaveShaderGraph,
 }
 pub struct Dialog {
     pub kind: Kind,
     pub blueprint_target: Option<(PathBuf, u64, String, usize)>,
+    pub shader_target: Option<(PathBuf, u64, String)>,
     directory: PathBuf,
     path: String,
     overwrite: bool,
@@ -25,6 +28,7 @@ impl Dialog {
         Self {
             kind,
             blueprint_target: None,
+            shader_target: None,
             directory,
             path: path.display().to_string(),
             overwrite: false,
@@ -44,6 +48,8 @@ impl App {
             Kind::Import => "Import image, model or prefab",
             Kind::LoadBlueprint => "Load and attach Blueprint copy",
             Kind::SaveBlueprint => "Save Blueprint graph",
+            Kind::LoadShaderGraph => "Load shader graph",
+            Kind::SaveShaderGraph => "Save shader graph",
         };
         egui::Window::new(title)
             .collapsible(false)
@@ -97,6 +103,10 @@ impl App {
                                             .file_name()
                                             .and_then(|n| n.to_str())
                                             .is_some_and(|n| n.ends_with(".blueprint.json")),
+                                        Kind::LoadShaderGraph | Kind::SaveShaderGraph => path
+                                            .file_name()
+                                            .and_then(|n| n.to_str())
+                                            .is_some_and(|n| n.ends_with(".shadergraph.json")),
                                         _ => ext == "json",
                                     };
                                 if !valid {
@@ -137,8 +147,10 @@ impl App {
                         .clicked()
                     {
                         let path = PathBuf::from(&dialog.path);
-                        if matches!(dialog.kind, Kind::Save | Kind::SaveBlueprint)
-                            && path.exists()
+                        if matches!(
+                            dialog.kind,
+                            Kind::Save | Kind::SaveBlueprint | Kind::SaveShaderGraph
+                        ) && path.exists()
                             && !dialog.overwrite
                         {
                             dialog.overwrite = true;
@@ -190,6 +202,34 @@ impl App {
                             self.workspace.blueprints_visible = true;
                             self.status =
                                 "Blueprint file ready · Attachments are independent copies".into();
+                        }
+                        self.result(result);
+                    }
+                    Kind::LoadShaderGraph | Kind::SaveShaderGraph => {
+                        let result = (|| {
+                            let (scene_path, revision, object) = dialog
+                                .shader_target
+                                .as_ref()
+                                .context("missing shader graph target")?;
+                            ensure!(
+                                *scene_path == self.editor.path
+                                    && *revision == self.editor.revision(),
+                                "Scene changed while choosing a shader graph file; try again"
+                            );
+                            ensure!(self.loading.is_none(), "Wait for loading to finish");
+                            if matches!(dialog.kind, Kind::SaveShaderGraph) {
+                                self.editor.save_shader_graph(object, &path)
+                            } else {
+                                self.editor.load_shader_graph(object, &path)
+                            }
+                        })();
+                        if result.is_ok() && matches!(dialog.kind, Kind::LoadShaderGraph) {
+                            if let Some((_, _, object)) = &dialog.shader_target {
+                                self.editor.select_object(Some(object.clone()));
+                            }
+                            self.workspace.shaders_visible = true;
+                            self.status =
+                                "Shader graph ready · Attachments are independent copies".into();
                         }
                         self.result(result);
                     }

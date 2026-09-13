@@ -27,6 +27,7 @@ fn quad(model: Mat4) -> DrawItem {
             uv_scale: [1.; 2],
             texture: TextureKind::White,
             lit: true,
+            shader: None,
         },
     }
 }
