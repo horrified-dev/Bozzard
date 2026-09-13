@@ -178,9 +178,9 @@
   "shadow_bias": 0.005,
   "shadow_normal_bias": 0.01,
   "sun_direction": [
-   -0.35,
-   0.75,
-   -0.55
+   -0.38,
+   0.4,
+   -0.7
   ],
   "sun_color": [
    1.0,
@@ -312,7 +312,7 @@
         "float": 0.0
        },
        {
-        "float": 0.08
+        "float": 0.12
        },
        {
         "vector": [
@@ -384,7 +384,7 @@
         "float": 7.0
        },
        {
-        "float": 0.0
+        "float": 20.0
        }
       ],
       "slot": "emissive"
@@ -401,7 +401,7 @@
         "float": 6.0
        },
        {
-        "float": 0.0
+        "float": 6.0
        }
       ],
       "slot": "emissive"
@@ -418,7 +418,7 @@
         "float": 1.6
        },
        {
-        "float": 0.0
+        "float": 1.6
        }
       ],
       "slot": "emissive"
@@ -435,7 +435,7 @@
         "float": 2.3
        },
        {
-        "float": 0.0
+        "float": 2.3
        }
       ],
       "slot": "emissive"
@@ -503,7 +503,7 @@
         "float": 9.0
        },
        {
-        "float": 0.0
+        "float": 9.0
        }
       ],
       "slot": "emissive"
@@ -559,10 +559,10 @@
       "kind": "multiply",
       "inputs": [
        {
-        "float": 0.12
+        "float": 0.3
        },
        {
-        "float": 0.0
+        "float": 0.22
        }
       ],
       "slot": "emissive"
@@ -576,10 +576,10 @@
       "kind": "multiply",
       "inputs": [
        {
-        "float": 0.12
+        "float": 0.3
        },
        {
-        "float": 0.0
+        "float": 0.22
        }
       ],
       "slot": "emissive"
@@ -593,10 +593,10 @@
       "kind": "multiply",
       "inputs": [
        {
-        "float": 0.07
+        "float": 0.16
        },
        {
-        "float": 0.0
+        "float": 0.16
        }
       ],
       "slot": "emissive"
@@ -685,7 +685,7 @@
         "float": 0.5
        },
        {
-        "float": 0.0
+        "float": 0.5
        }
       ],
       "slot": "emissive"
@@ -719,7 +719,7 @@
         "float": 0.0
        },
        {
-        "float": 8.0
+        "float": 12.0
        }
       ],
       "slot": "emissive"
@@ -733,13 +733,13 @@
       "kind": "append",
       "inputs": [
        {
-        "float": 0.1
+        "float": 0.25
        },
        {
-        "float": 0.5
+        "float": 1.2
        },
        {
-        "float": 0.6
+        "float": 1.5
        }
       ],
       "slot": "emissive"
@@ -806,10 +806,95 @@
       "kind": "float",
       "inputs": [
        {
-        "float": 0.08
+        "float": 0.12
        }
       ],
       "slot": "base_color"
+     },
+     {
+      "id": 33,
+      "position": [
+       -120.0,
+       600.0
+      ],
+      "kind": "add",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 34,
+      "position": [
+       60.0,
+       180.0
+      ],
+      "kind": "multiply",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 35,
+      "position": [
+       140.0,
+       700.0
+      ],
+      "kind": "multiply",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.5
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 36,
+      "position": [
+       300.0,
+       700.0
+      ],
+      "kind": "add",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.5
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 38,
+      "position": [
+       460.0,
+       700.0
+      ],
+      "kind": "multiply",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
      }
     ],
     "wires": [
@@ -935,16 +1020,6 @@
      },
      {
       "from": {
-       "node": 2,
-       "port": 0
-      },
-      "to": {
-       "node": 12,
-       "port": 1
-      }
-     },
-     {
-      "from": {
        "node": 9,
        "port": 0
       },
@@ -960,16 +1035,6 @@
       },
       "to": {
        "node": 14,
-       "port": 0
-      }
-     },
-     {
-      "from": {
-       "node": 12,
-       "port": 0
-      },
-      "to": {
-       "node": 15,
        "port": 0
       }
      },
@@ -1085,16 +1150,6 @@
      },
      {
       "from": {
-       "node": 13,
-       "port": 0
-      },
-      "to": {
-       "node": 23,
-       "port": 0
-      }
-     },
-     {
-      "from": {
        "node": 23,
        "port": 0
       },
@@ -1171,6 +1226,106 @@
       "to": {
        "node": 1,
        "port": 2
+      }
+     },
+     {
+      "from": {
+       "node": 12,
+       "port": 0
+      },
+      "to": {
+       "node": 33,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 2,
+       "port": 0
+      },
+      "to": {
+       "node": 33,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 33,
+       "port": 0
+      },
+      "to": {
+       "node": 15,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 13,
+       "port": 0
+      },
+      "to": {
+       "node": 34,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 14,
+       "port": 0
+      },
+      "to": {
+       "node": 34,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 15,
+       "port": 0
+      },
+      "to": {
+       "node": 35,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 35,
+       "port": 0
+      },
+      "to": {
+       "node": 36,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 34,
+       "port": 0
+      },
+      "to": {
+       "node": 38,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 36,
+       "port": 0
+      },
+      "to": {
+       "node": 38,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 38,
+       "port": 0
+      },
+      "to": {
+       "node": 23,
+       "port": 0
       }
      }
     ]

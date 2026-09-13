@@ -1,2245 +1,2245 @@
 {
-  "prefabs": {
-    "prefab-6": {
-      "asset": "pulse-cube-prefab-1",
-      "members": {
-        "pulse-cube": "prefab-6"
-      },
-      "baseline": [
-        {
-          "shader_graph": {
-            "version": 1,
-            "name": "Pulse Emissive",
-            "nodes": [
-              {
-                "id": 1,
-                "position": [
-                  560.0,
-                  40.0
-                ],
-                "kind": "master",
-                "inputs": [
-                  {
-                    "vector": [
-                      0.8,
-                      0.8,
-                      0.8
-                    ]
-                  },
-                  {
-                    "float": 0.0
-                  },
-                  {
-                    "float": 0.5
-                  },
-                  {
-                    "vector": [
-                      0.0,
-                      0.0,
-                      0.0
-                    ]
-                  },
-                  {
-                    "float": 1.0
-                  },
-                  {
-                    "vector": [
-                      0.0,
-                      1.0,
-                      0.0
-                    ]
-                  }
-                ],
-                "slot": "base_color"
-              },
-              {
-                "id": 2,
-                "position": [
-                  -92.41952,
-                  40.87422
-                ],
-                "kind": "time",
-                "inputs": [],
-                "slot": "base_color"
-              },
-              {
-                "id": 3,
-                "position": [
-                  220.0,
-                  40.0
-                ],
-                "kind": "sine",
-                "inputs": [
-                  {
-                    "float": 0.0
-                  }
-                ],
-                "slot": "base_color"
-              },
-              {
-                "id": 4,
-                "position": [
-                  -69.31285,
-                  345.89636
-                ],
-                "kind": "append",
-                "inputs": [
-                  {
-                    "float": 0.6
-                  },
-                  {
-                    "float": 0.15
-                  },
-                  {
-                    "float": 1.0
-                  }
-                ],
-                "slot": "base_color"
-              },
-              {
-                "id": 5,
-                "position": [
-                  290.6893,
-                  346.41217
-                ],
-                "kind": "scale_vector",
-                "inputs": [
-                  {
-                    "vector": [
-                      0.0,
-                      0.0,
-                      0.0
-                    ]
-                  },
-                  {
-                    "float": 0.5
-                  }
-                ],
-                "slot": "base_color"
-              }
-            ],
-            "wires": [
-              {
-                "from": {
-                  "node": 2,
-                  "port": 0
-                },
-                "to": {
-                  "node": 3,
-                  "port": 0
-                }
-              },
-              {
-                "from": {
-                  "node": 4,
-                  "port": 0
-                },
-                "to": {
-                  "node": 5,
-                  "port": 0
-                }
-              },
-              {
-                "from": {
-                  "node": 5,
-                  "port": 0
-                },
-                "to": {
-                  "node": 1,
-                  "port": 3
-                }
-              },
-              {
-                "from": {
-                  "node": 3,
-                  "port": 0
-                },
-                "to": {
-                  "node": 5,
-                  "port": 1
-                }
-              }
-            ]
-          },
-          "id": "prefab-6",
-          "name": "Pulse Cube",
-          "transform": {
-            "translation": [
-              0.0,
-              0.0,
-              0.0
-            ],
-            "rotation_degrees": [
-              0.0,
-              0.0,
-              0.0
-            ],
-            "scale": [
-              1.0,
-              1.0,
-              1.0
-            ]
-          },
-          "drawable": {
-            "gi_static": true,
-            "layer": "3d",
-            "mesh": "cube",
-            "texture": "white",
-            "color": [
-              1.0,
-              1.0,
-              1.0
-            ],
-            "uv_scale": [
-              1.0,
-              1.0
-            ]
-          }
+ "prefabs": {
+  "prefab-6": {
+   "asset": "pulse-cube-prefab-1",
+   "members": {
+    "pulse-cube": "prefab-6"
+   },
+   "baseline": [
+    {
+     "shader_graph": {
+      "version": 1,
+      "name": "Pulse Emissive",
+      "nodes": [
+       {
+        "id": 1,
+        "position": [
+         560.0,
+         40.0
+        ],
+        "kind": "master",
+        "inputs": [
+         {
+          "vector": [
+           0.8,
+           0.8,
+           0.8
+          ]
+         },
+         {
+          "float": 0.0
+         },
+         {
+          "float": 0.5
+         },
+         {
+          "vector": [
+           0.0,
+           0.0,
+           0.0
+          ]
+         },
+         {
+          "float": 1.0
+         },
+         {
+          "vector": [
+           0.0,
+           1.0,
+           0.0
+          ]
+         }
+        ],
+        "slot": "base_color"
+       },
+       {
+        "id": 2,
+        "position": [
+         -92.41952,
+         40.87422
+        ],
+        "kind": "time",
+        "inputs": [],
+        "slot": "base_color"
+       },
+       {
+        "id": 3,
+        "position": [
+         220.0,
+         40.0
+        ],
+        "kind": "sine",
+        "inputs": [
+         {
+          "float": 0.0
+         }
+        ],
+        "slot": "base_color"
+       },
+       {
+        "id": 4,
+        "position": [
+         -69.31285,
+         345.89636
+        ],
+        "kind": "append",
+        "inputs": [
+         {
+          "float": 0.6
+         },
+         {
+          "float": 0.15
+         },
+         {
+          "float": 1.0
+         }
+        ],
+        "slot": "base_color"
+       },
+       {
+        "id": 5,
+        "position": [
+         290.6893,
+         346.41217
+        ],
+        "kind": "scale_vector",
+        "inputs": [
+         {
+          "vector": [
+           0.0,
+           0.0,
+           0.0
+          ]
+         },
+         {
+          "float": 0.5
+         }
+        ],
+        "slot": "base_color"
+       }
+      ],
+      "wires": [
+       {
+        "from": {
+         "node": 2,
+         "port": 0
+        },
+        "to": {
+         "node": 3,
+         "port": 0
         }
-      ]
-    },
-    "pulse-cube": {
-      "asset": "pulse-cube-prefab-1",
-      "members": {
-        "pulse-cube": "pulse-cube"
-      },
-      "baseline": [
-        {
-          "shader_graph": {
-            "version": 1,
-            "name": "Pulse Emissive",
-            "nodes": [
-              {
-                "id": 1,
-                "position": [
-                  560.0,
-                  40.0
-                ],
-                "kind": "master",
-                "inputs": [
-                  {
-                    "vector": [
-                      0.8,
-                      0.8,
-                      0.8
-                    ]
-                  },
-                  {
-                    "float": 0.0
-                  },
-                  {
-                    "float": 0.5
-                  },
-                  {
-                    "vector": [
-                      0.0,
-                      0.0,
-                      0.0
-                    ]
-                  },
-                  {
-                    "float": 1.0
-                  },
-                  {
-                    "vector": [
-                      0.0,
-                      1.0,
-                      0.0
-                    ]
-                  }
-                ],
-                "slot": "base_color"
-              },
-              {
-                "id": 2,
-                "position": [
-                  -92.41952,
-                  40.87422
-                ],
-                "kind": "time",
-                "inputs": [],
-                "slot": "base_color"
-              },
-              {
-                "id": 3,
-                "position": [
-                  220.0,
-                  40.0
-                ],
-                "kind": "sine",
-                "inputs": [
-                  {
-                    "float": 0.0
-                  }
-                ],
-                "slot": "base_color"
-              },
-              {
-                "id": 4,
-                "position": [
-                  -69.31285,
-                  345.89636
-                ],
-                "kind": "append",
-                "inputs": [
-                  {
-                    "float": 0.6
-                  },
-                  {
-                    "float": 0.15
-                  },
-                  {
-                    "float": 1.0
-                  }
-                ],
-                "slot": "base_color"
-              },
-              {
-                "id": 5,
-                "position": [
-                  290.6893,
-                  346.41217
-                ],
-                "kind": "scale_vector",
-                "inputs": [
-                  {
-                    "vector": [
-                      0.0,
-                      0.0,
-                      0.0
-                    ]
-                  },
-                  {
-                    "float": 0.5
-                  }
-                ],
-                "slot": "base_color"
-              }
-            ],
-            "wires": [
-              {
-                "from": {
-                  "node": 2,
-                  "port": 0
-                },
-                "to": {
-                  "node": 3,
-                  "port": 0
-                }
-              },
-              {
-                "from": {
-                  "node": 4,
-                  "port": 0
-                },
-                "to": {
-                  "node": 5,
-                  "port": 0
-                }
-              },
-              {
-                "from": {
-                  "node": 5,
-                  "port": 0
-                },
-                "to": {
-                  "node": 1,
-                  "port": 3
-                }
-              },
-              {
-                "from": {
-                  "node": 3,
-                  "port": 0
-                },
-                "to": {
-                  "node": 5,
-                  "port": 1
-                }
-              }
-            ]
-          },
-          "id": "pulse-cube",
-          "name": "Pulse Cube",
-          "transform": {
-            "translation": [
-              0.0,
-              0.0,
-              0.0
-            ],
-            "rotation_degrees": [
-              0.0,
-              0.0,
-              0.0
-            ],
-            "scale": [
-              1.0,
-              1.0,
-              1.0
-            ]
-          },
-          "drawable": {
-            "gi_static": true,
-            "layer": "3d",
-            "mesh": "cube",
-            "texture": "white",
-            "color": [
-              1.0,
-              1.0,
-              1.0
-            ],
-            "uv_scale": [
-              1.0,
-              1.0
-            ]
-          }
+       },
+       {
+        "from": {
+         "node": 4,
+         "port": 0
+        },
+        "to": {
+         "node": 5,
+         "port": 0
         }
+       },
+       {
+        "from": {
+         "node": 5,
+         "port": 0
+        },
+        "to": {
+         "node": 1,
+         "port": 3
+        }
+       },
+       {
+        "from": {
+         "node": 3,
+         "port": 0
+        },
+        "to": {
+         "node": 5,
+         "port": 1
+        }
+       }
       ]
-    }
-  },
-  "fog": {
-    "enabled": false,
-    "color": [
-      0.5,
-      0.6,
-      0.7
-    ],
-    "distance_density": 0.02,
-    "start_distance": 0.0,
-    "height_density": 0.0,
-    "base_height": 0.0,
-    "height_falloff": 1.0
-  },
-  "gi": {
-    "enabled": false,
-    "intensity": 1.0,
-    "normal_bias": 0.05,
-    "volume": {
-      "min": [
-        -5.0,
-        -1.0,
-        -5.0
+     },
+     "id": "prefab-6",
+     "name": "Pulse Cube",
+     "transform": {
+      "translation": [
+       0.0,
+       0.0,
+       0.0
       ],
-      "max": [
-        5.0,
-        5.0,
-        5.0
+      "rotation_degrees": [
+       0.0,
+       0.0,
+       0.0
       ],
-      "resolution": [
-        8,
-        4,
-        8
-      ],
-      "samples": 128,
-      "bounces": 2
-    }
-  },
-  "environment": {
-    "zenith": [
-      0.15,
-      0.32,
-      0.65
-    ],
-    "horizon": [
-      0.65,
-      0.7,
-      0.8
-    ],
-    "ground": [
-      0.12,
-      0.1,
-      0.08
-    ],
-    "intensity": 0.35,
-    "background": true
-  },
-  "display": {
-    "temporal_aa": {
-      "enabled": false,
-      "history_weight": 0.9
-    },
-    "motion_blur": {
-      "enabled": false,
-      "shutter_angle": 180.0,
-      "max_radius": 32.0,
-      "samples": 12
-    },
-    "reflections": {
-      "enabled": false,
-      "strength": 1.0,
-      "max_distance": 30.0,
-      "thickness": 0.2,
-      "roughness_cutoff": 0.65,
-      "steps": 64
-    },
-    "bloom": {
-      "enabled": false,
-      "intensity": 0.15,
-      "threshold": 1.0,
-      "scatter": 0.7,
-      "anamorphic": 0.0
-    },
-    "tone_mapper": "reinhard",
-    "color_grading": {
-      "temperature": 0.0,
-      "tint": 0.0,
-      "saturation": 1.0,
-      "contrast": 1.0,
-      "lift": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "gamma": [
-        1.0,
-        1.0,
-        1.0
-      ],
-      "gain": [
-        1.0,
-        1.0,
-        1.0
+      "scale": [
+       1.0,
+       1.0,
+       1.0
       ]
-    },
-    "ambient_occlusion": {
-      "enabled": false,
-      "intensity": 1.0,
-      "radius": 0.7,
-      "bias": 0.025
-    },
-    "heat_distortion": {
-      "enabled": false,
-      "strength": 3.0,
-      "threshold": 2.0,
-      "speed": 1.0,
-      "rise": 0.08
-    },
-    "grain": {
-      "intensity": 0.0,
-      "size": 1.0
-    },
-    "vignette": {
-      "intensity": 0.0,
-      "roundness": 0.7,
-      "feather": 0.6
-    },
-    "depth_of_field": {
-      "enabled": false,
-      "focus_distance": 5.0,
-      "focal_length_mm": 50.0,
-      "aperture": 2.8,
-      "max_blur_radius": 18.0
-    },
-    "auto_exposure": {
-      "enabled": false,
-      "strength": 1.0,
-      "min_ev": -2.0,
-      "max_ev": 2.0,
-      "target_gray": 0.18,
-      "speed_up": 1.5,
-      "speed_down": 3.0,
-      "center_weight": 0.65
-    },
-    "volumetric_fog": {
-      "enabled": false,
-      "density": 0.035,
-      "albedo": [
-        0.9,
-        0.94,
-        1.0
+     },
+     "drawable": {
+      "gi_static": true,
+      "layer": "3d",
+      "mesh": "cube",
+      "texture": "white",
+      "color": [
+       1.0,
+       1.0,
+       1.0
       ],
-      "anisotropy": 0.3,
-      "base_height": 0.0,
-      "height_falloff": 0.25,
-      "start_distance": 0.25,
-      "max_distance": 40.0,
-      "noise_amount": 0.65,
-      "noise_scale": 0.35,
-      "wind": [
-        0.15,
-        0.025,
-        0.07
+      "uv_scale": [
+       1.0,
+       1.0
+      ]
+     }
+    }
+   ]
+  },
+  "pulse-cube": {
+   "asset": "pulse-cube-prefab-1",
+   "members": {
+    "pulse-cube": "pulse-cube"
+   },
+   "baseline": [
+    {
+     "shader_graph": {
+      "version": 1,
+      "name": "Pulse Emissive",
+      "nodes": [
+       {
+        "id": 1,
+        "position": [
+         560.0,
+         40.0
+        ],
+        "kind": "master",
+        "inputs": [
+         {
+          "vector": [
+           0.8,
+           0.8,
+           0.8
+          ]
+         },
+         {
+          "float": 0.0
+         },
+         {
+          "float": 0.5
+         },
+         {
+          "vector": [
+           0.0,
+           0.0,
+           0.0
+          ]
+         },
+         {
+          "float": 1.0
+         },
+         {
+          "vector": [
+           0.0,
+           1.0,
+           0.0
+          ]
+         }
+        ],
+        "slot": "base_color"
+       },
+       {
+        "id": 2,
+        "position": [
+         -92.41952,
+         40.87422
+        ],
+        "kind": "time",
+        "inputs": [],
+        "slot": "base_color"
+       },
+       {
+        "id": 3,
+        "position": [
+         220.0,
+         40.0
+        ],
+        "kind": "sine",
+        "inputs": [
+         {
+          "float": 0.0
+         }
+        ],
+        "slot": "base_color"
+       },
+       {
+        "id": 4,
+        "position": [
+         -69.31285,
+         345.89636
+        ],
+        "kind": "append",
+        "inputs": [
+         {
+          "float": 0.6
+         },
+         {
+          "float": 0.15
+         },
+         {
+          "float": 1.0
+         }
+        ],
+        "slot": "base_color"
+       },
+       {
+        "id": 5,
+        "position": [
+         290.6893,
+         346.41217
+        ],
+        "kind": "scale_vector",
+        "inputs": [
+         {
+          "vector": [
+           0.0,
+           0.0,
+           0.0
+          ]
+         },
+         {
+          "float": 0.5
+         }
+        ],
+        "slot": "base_color"
+       }
       ],
-      "light_intensity": 1.0,
-      "ambient": 0.25,
-      "steps": 48
-    },
-    "exposure_ev": 0.0,
-    "tone_mapping": true
-  },
-  "lighting": {
-    "shadows": true,
-    "shadow_resolution": 2048,
-    "shadow_bias": 0.005,
-    "shadow_normal_bias": 0.01,
-    "sun_direction": [
-      0.4,
-      0.8,
-      0.6
-    ],
-    "sun_color": [
-      1.0,
-      1.0,
-      1.0
-    ],
-    "sun_intensity": 3.0,
-    "ambient_color": [
-      1.0,
-      1.0,
-      1.0
-    ],
-    "ambient_intensity": 0.03
-  },
-  "version": 1,
-  "name": "Shader Node Lab",
-  "views": {
-    "2d": "camera-2d",
-    "3d": "camera-3d"
-  },
-  "objects": [
-    {
-      "id": "camera-3d",
-      "name": "Camera 3D",
-      "transform": {
-        "translation": [
-          3.2,
-          2.2,
-          5.2
-        ],
-        "rotation_degrees": [
-          -16.91338,
-          27.014135,
-          0.0
-        ],
-        "scale": [
-          1.0,
-          1.0,
-          1.0
-        ]
-      },
-      "camera": {
-        "projection": "perspective",
-        "vertical_fov_degrees": 55.0,
-        "near": 0.1,
-        "far": 100.0
-      }
-    },
-    {
-      "id": "camera-2d",
-      "name": "Camera 2D",
-      "transform": {
-        "translation": [
-          0.0,
-          0.0,
-          10.0
-        ],
-        "rotation_degrees": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          1.0,
-          1.0,
-          1.0
-        ]
-      },
-      "camera": {
-        "projection": "orthographic",
-        "vertical_size": 7.0,
-        "near": 0.1,
-        "far": 100.0
-      }
-    },
-    {
-      "shader_graph": {
-        "version": 1,
-        "name": "Pulse Emissive",
-        "nodes": [
-          {
-            "id": 1,
-            "position": [
-              560.0,
-              40.0
-            ],
-            "kind": "master",
-            "inputs": [
-              {
-                "vector": [
-                  0.8,
-                  0.8,
-                  0.8
-                ]
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.5
-              },
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 1.0
-              },
-              {
-                "vector": [
-                  0.0,
-                  1.0,
-                  0.0
-                ]
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 2,
-            "position": [
-              -92.41952,
-              40.87422
-            ],
-            "kind": "time",
-            "inputs": [],
-            "slot": "base_color"
-          },
-          {
-            "id": 3,
-            "position": [
-              220.0,
-              40.0
-            ],
-            "kind": "sine",
-            "inputs": [
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 4,
-            "position": [
-              -69.31285,
-              345.89636
-            ],
-            "kind": "append",
-            "inputs": [
-              {
-                "float": 1.0
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "float": 1.0
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 5,
-            "position": [
-              290.6893,
-              346.41217
-            ],
-            "kind": "scale_vector",
-            "inputs": [
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 0.5
-              }
-            ],
-            "slot": "base_color"
-          }
-        ],
-        "wires": [
-          {
-            "from": {
-              "node": 2,
-              "port": 0
-            },
-            "to": {
-              "node": 3,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 4,
-              "port": 0
-            },
-            "to": {
-              "node": 5,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 5,
-              "port": 0
-            },
-            "to": {
-              "node": 1,
-              "port": 3
-            }
-          },
-          {
-            "from": {
-              "node": 3,
-              "port": 0
-            },
-            "to": {
-              "node": 5,
-              "port": 1
-            }
-          }
-        ]
-      },
-      "id": "pulse-cube",
-      "name": "Pulse Cube",
-      "transform": {
-        "translation": [
-          -1.1,
-          0.6,
-          0.0
-        ],
-        "rotation_degrees": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          1.0,
-          1.0,
-          1.0
-        ]
-      },
-      "drawable": {
-        "gi_static": true,
-        "layer": "3d",
-        "mesh": "cube",
-        "texture": "white",
-        "color": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "uv_scale": [
-          1.0,
-          1.0
-        ]
-      }
-    },
-    {
-      "shader_graph": {
-        "version": 1,
-        "name": "Texture Fade",
-        "nodes": [
-          {
-            "id": 1,
-            "position": [
-              576.8615,
-              -55.72977
-            ],
-            "kind": "master",
-            "inputs": [
-              {
-                "vector": [
-                  1.0,
-                  1.0,
-                  1.0
-                ]
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.8
-              },
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 1.0
-              },
-              {
-                "vector": [
-                  0.5,
-                  0.5,
-                  1.0
-                ]
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 2,
-            "position": [
-              -102.627686,
-              90.06161
-            ],
-            "kind": "texture_sample",
-            "inputs": [
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 3,
-            "position": [
-              264.06802,
-              201.67519
-            ],
-            "kind": "one_minus",
-            "inputs": [
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "base_color"
-          }
-        ],
-        "wires": [
-          {
-            "from": {
-              "node": 2,
-              "port": 0
-            },
-            "to": {
-              "node": 1,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 2,
-              "port": 1
-            },
-            "to": {
-              "node": 3,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 3,
-              "port": 0
-            },
-            "to": {
-              "node": 1,
-              "port": 4
-            }
-          }
-        ]
-      },
-      "id": "fade-cube",
-      "name": "Fade Cube",
-      "transform": {
-        "translation": [
-          1.1,
-          0.6,
-          0.0
-        ],
-        "rotation_degrees": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          1.0,
-          1.0,
-          1.0
-        ]
-      },
-      "drawable": {
-        "gi_static": true,
-        "layer": "3d",
-        "mesh": "cube",
-        "texture": "checker",
-        "color": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "uv_scale": [
-          1.0,
-          1.0
-        ]
-      },
-      "collider": {
-        "center": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "size": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "enabled": true
-      }
-    },
-    {
-      "id": "floor",
-      "name": "Floor",
-      "transform": {
-        "translation": [
-          0.0,
-          -0.35,
-          0.0
-        ],
-        "rotation_degrees": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          8.0,
-          0.1,
-          8.0
-        ]
-      },
-      "drawable": {
-        "gi_static": true,
-        "layer": "3d",
-        "mesh": "cube",
-        "texture": "checker",
-        "color": [
-          0.32,
-          0.42,
-          0.5
-        ],
-        "uv_scale": [
-          8.0,
-          8.0
-        ]
-      },
-      "collider": {
-        "center": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "size": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "enabled": true
-      }
-    },
-    {
-      "shader_graph": {
-        "version": 1,
-        "name": "Pulse Emissive",
-        "nodes": [
-          {
-            "id": 1,
-            "position": [
-              560.0,
-              40.0
-            ],
-            "kind": "master",
-            "inputs": [
-              {
-                "vector": [
-                  0.8,
-                  0.8,
-                  0.8
-                ]
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.5
-              },
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 1.0
-              },
-              {
-                "vector": [
-                  0.0,
-                  1.0,
-                  0.0
-                ]
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 2,
-            "position": [
-              -92.41952,
-              40.87422
-            ],
-            "kind": "time",
-            "inputs": [],
-            "slot": "base_color"
-          },
-          {
-            "id": 3,
-            "position": [
-              220.0,
-              40.0
-            ],
-            "kind": "sine",
-            "inputs": [
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 4,
-            "position": [
-              -69.31285,
-              345.89636
-            ],
-            "kind": "append",
-            "inputs": [
-              {
-                "float": 0.6
-              },
-              {
-                "float": 0.15
-              },
-              {
-                "float": 1.0
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 5,
-            "position": [
-              290.6893,
-              346.41217
-            ],
-            "kind": "scale_vector",
-            "inputs": [
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 0.5
-              }
-            ],
-            "slot": "base_color"
-          }
-        ],
-        "wires": [
-          {
-            "from": {
-              "node": 2,
-              "port": 0
-            },
-            "to": {
-              "node": 3,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 4,
-              "port": 0
-            },
-            "to": {
-              "node": 5,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 5,
-              "port": 0
-            },
-            "to": {
-              "node": 1,
-              "port": 3
-            }
-          },
-          {
-            "from": {
-              "node": 3,
-              "port": 0
-            },
-            "to": {
-              "node": 5,
-              "port": 1
-            }
-          }
-        ]
-      },
-      "id": "prefab-6",
-      "name": "Pulse Cube",
-      "transform": {
-        "translation": [
-          0.5725765,
-          1.8194954,
-          -0.17015934
-        ],
-        "rotation_degrees": [
-          -12.621561,
-          0.0,
-          -14.364544
-        ],
-        "scale": [
-          0.47361946,
-          0.47361946,
-          0.47361946
-        ]
-      },
-      "drawable": {
-        "gi_static": true,
-        "layer": "3d",
-        "mesh": "cube",
-        "texture": "white",
-        "color": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "uv_scale": [
-          1.0,
-          1.0
-        ]
-      },
-      "collider": {
-        "center": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "size": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "enabled": true
-      },
-      "gravity": {
-        "enabled": true,
-        "acceleration": 9.81,
-        "max_speed": 50.0,
-        "jump_speed": 5.0,
-        "mass": 1.0,
-        "friction": 0.6,
-        "restitution": 0.0,
-        "angular_damping": 0.1
-      }
-    },
-    {
-      "shader_graph": {
-        "version": 1,
-        "name": "New Shader",
-        "nodes": [
-          {
-            "id": 1,
-            "position": [
-              300.0,
-              40.0
-            ],
-            "kind": "master",
-            "inputs": [
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 2,
-            "position": [
-              -11.43586,
-              114.52354
-            ],
-            "kind": "color",
-            "inputs": [
-              {
-                "vector": [
-                  0.670502,
-                  0.021524647,
-                  0.021524647
-                ]
-              }
-            ],
-            "slot": "base_color"
-          }
-        ],
-        "wires": [
-          {
-            "from": {
-              "node": 2,
-              "port": 0
-            },
-            "to": {
-              "node": 1,
-              "port": 0
-            }
-          }
-        ]
-      },
-      "id": "object-1",
-      "name": "Cube",
-      "transform": {
-        "translation": [
-          -3.2327945,
-          1.9897983,
-          -2.4656744
-        ],
-        "rotation_degrees": [
-          -29.691761,
-          0.0,
-          0.0
-        ],
-        "scale": [
-          0.7285043,
-          0.7285043,
-          0.7285043
-        ]
-      },
-      "drawable": {
-        "gi_static": true,
-        "layer": "3d",
-        "mesh": "cube",
-        "texture": "white",
-        "color": [
-          0.25,
-          0.8,
-          0.7
-        ],
-        "uv_scale": [
-          1.0,
-          1.0
-        ]
-      }
-    },
-    {
-      "shader_graph": {
-        "version": 1,
-        "name": "Plasma Core",
-        "nodes": [
-          {
-            "id": 1,
-            "position": [
-              1410.8191,
-              304.8588
-            ],
-            "kind": "master",
-            "inputs": [
-              {
-                "vector": [
-                  0.02,
-                  0.02,
-                  0.03
-                ]
-              },
-              {
-                "float": 0.9
-              },
-              {
-                "float": 0.22
-              },
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 1.0
-              },
-              {
-                "vector": [
-                  0.0,
-                  1.0,
-                  0.0
-                ]
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 2,
-            "position": [
-              -760.0,
-              60.0
-            ],
-            "kind": "time",
-            "inputs": [],
-            "slot": "emissive"
-          },
-          {
-            "id": 3,
-            "position": [
-              -760.0,
-              260.0
-            ],
-            "kind": "world_position",
-            "inputs": [],
-            "slot": "emissive"
-          },
-          {
-            "id": 4,
-            "position": [
-              -560.0,
-              260.0
-            ],
-            "kind": "split",
-            "inputs": [
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 5,
-            "position": [
-              -360.0,
-              240.0
-            ],
-            "kind": "multiply",
-            "inputs": [
-              {
-                "float": 20.0
-              },
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 6,
-            "position": [
-              -360.0,
-              80.0
-            ],
-            "kind": "multiply",
-            "inputs": [
-              {
-                "float": 3.0
-              },
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 7,
-            "position": [
-              -160.0,
-              160.0
-            ],
-            "kind": "subtract",
-            "inputs": [
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 8,
-            "position": [
-              40.0,
-              60.0
-            ],
-            "kind": "sine",
-            "inputs": [
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 9,
-            "position": [
-              220.0,
-              60.0
-            ],
-            "kind": "clamp",
-            "inputs": [
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "float": 1.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 10,
-            "position": [
-              380.0,
-              40.0
-            ],
-            "kind": "power",
-            "inputs": [
-              {
-                "float": 0.0
-              },
-              {
-                "float": 6.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 11,
-            "position": [
-              40.0,
-              280.0
-            ],
-            "kind": "add",
-            "inputs": [
-              {
-                "float": 0.0
-              },
-              {
-                "float": 2.1
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 12,
-            "position": [
-              220.0,
-              280.0
-            ],
-            "kind": "sine",
-            "inputs": [
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 13,
-            "position": [
-              380.0,
-              280.0
-            ],
-            "kind": "clamp",
-            "inputs": [
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "float": 1.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 14,
-            "position": [
-              560.0,
-              40.0
-            ],
-            "kind": "one_minus",
-            "inputs": [
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 15,
-            "position": [
-              560.0,
-              200.0
-            ],
-            "kind": "lerp",
-            "inputs": [
-              {
-                "float": 0.15
-              },
-              {
-                "float": 1.0
-              },
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 16,
-            "position": [
-              720.0,
-              120.0
-            ],
-            "kind": "append",
-            "inputs": [
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.85
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 17,
-            "position": [
-              900.0,
-              120.0
-            ],
-            "kind": "scale_vector",
-            "inputs": [
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 20,
-            "position": [
-              -760.0,
-              480.0
-            ],
-            "kind": "world_normal",
-            "inputs": [],
-            "slot": "emissive"
-          },
-          {
-            "id": 21,
-            "position": [
-              -760.0,
-              620.0
-            ],
-            "kind": "view_direction",
-            "inputs": [],
-            "slot": "emissive"
-          },
-          {
-            "id": 22,
-            "position": [
-              -560.0,
-              550.0
-            ],
-            "kind": "dot",
-            "inputs": [
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 23,
-            "position": [
-              -360.0,
-              550.0
-            ],
-            "kind": "clamp",
-            "inputs": [
-              {
-                "float": 0.0
-              },
-              {
-                "float": 0.0
-              },
-              {
-                "float": 1.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 24,
-            "position": [
-              -160.0,
-              550.0
-            ],
-            "kind": "one_minus",
-            "inputs": [
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 25,
-            "position": [
-              40.0,
-              550.0
-            ],
-            "kind": "power",
-            "inputs": [
-              {
-                "float": 0.0
-              },
-              {
-                "float": 3.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 26,
-            "position": [
-              380.0,
-              620.0
-            ],
-            "kind": "append",
-            "inputs": [
-              {
-                "float": 1.0
-              },
-              {
-                "float": 0.6
-              },
-              {
-                "float": 0.25
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 27,
-            "position": [
-              560.0,
-              620.0
-            ],
-            "kind": "scale_vector",
-            "inputs": [
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "float": 0.0
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 28,
-            "position": [
-              1080.0,
-              380.0
-            ],
-            "kind": "add_vector",
-            "inputs": [
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              },
-              {
-                "vector": [
-                  0.0,
-                  0.0,
-                  0.0
-                ]
-              }
-            ],
-            "slot": "emissive"
-          },
-          {
-            "id": 30,
-            "position": [
-              1000.0,
-              20.0
-            ],
-            "kind": "color",
-            "inputs": [
-              {
-                "vector": [
-                  0.020000005,
-                  0.02,
-                  0.03
-                ]
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 31,
-            "position": [
-              1000.0,
-              160.0
-            ],
-            "kind": "float",
-            "inputs": [
-              {
-                "float": 0.9
-              }
-            ],
-            "slot": "base_color"
-          },
-          {
-            "id": 32,
-            "position": [
-              1000.0,
-              300.0
-            ],
-            "kind": "float",
-            "inputs": [
-              {
-                "float": 0.22
-              }
-            ],
-            "slot": "base_color"
-          }
-        ],
-        "wires": [
-          {
-            "from": {
-              "node": 3,
-              "port": 0
-            },
-            "to": {
-              "node": 4,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 4,
-              "port": 1
-            },
-            "to": {
-              "node": 5,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 2,
-              "port": 0
-            },
-            "to": {
-              "node": 6,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 5,
-              "port": 0
-            },
-            "to": {
-              "node": 7,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 6,
-              "port": 0
-            },
-            "to": {
-              "node": 7,
-              "port": 1
-            }
-          },
-          {
-            "from": {
-              "node": 7,
-              "port": 0
-            },
-            "to": {
-              "node": 8,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 8,
-              "port": 0
-            },
-            "to": {
-              "node": 9,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 9,
-              "port": 0
-            },
-            "to": {
-              "node": 10,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 7,
-              "port": 0
-            },
-            "to": {
-              "node": 11,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 11,
-              "port": 0
-            },
-            "to": {
-              "node": 12,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 12,
-              "port": 0
-            },
-            "to": {
-              "node": 13,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 9,
-              "port": 0
-            },
-            "to": {
-              "node": 14,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 13,
-              "port": 0
-            },
-            "to": {
-              "node": 15,
-              "port": 2
-            }
-          },
-          {
-            "from": {
-              "node": 14,
-              "port": 0
-            },
-            "to": {
-              "node": 16,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 15,
-              "port": 0
-            },
-            "to": {
-              "node": 16,
-              "port": 1
-            }
-          },
-          {
-            "from": {
-              "node": 16,
-              "port": 0
-            },
-            "to": {
-              "node": 17,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 10,
-              "port": 0
-            },
-            "to": {
-              "node": 17,
-              "port": 1
-            }
-          },
-          {
-            "from": {
-              "node": 20,
-              "port": 0
-            },
-            "to": {
-              "node": 22,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 21,
-              "port": 0
-            },
-            "to": {
-              "node": 22,
-              "port": 1
-            }
-          },
-          {
-            "from": {
-              "node": 22,
-              "port": 0
-            },
-            "to": {
-              "node": 23,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 23,
-              "port": 0
-            },
-            "to": {
-              "node": 24,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 24,
-              "port": 0
-            },
-            "to": {
-              "node": 25,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 26,
-              "port": 0
-            },
-            "to": {
-              "node": 27,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 25,
-              "port": 0
-            },
-            "to": {
-              "node": 27,
-              "port": 1
-            }
-          },
-          {
-            "from": {
-              "node": 17,
-              "port": 0
-            },
-            "to": {
-              "node": 28,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 27,
-              "port": 0
-            },
-            "to": {
-              "node": 28,
-              "port": 1
-            }
-          },
-          {
-            "from": {
-              "node": 28,
-              "port": 0
-            },
-            "to": {
-              "node": 1,
-              "port": 3
-            }
-          },
-          {
-            "from": {
-              "node": 30,
-              "port": 0
-            },
-            "to": {
-              "node": 1,
-              "port": 0
-            }
-          },
-          {
-            "from": {
-              "node": 31,
-              "port": 0
-            },
-            "to": {
-              "node": 1,
-              "port": 1
-            }
-          },
-          {
-            "from": {
-              "node": 32,
-              "port": 0
-            },
-            "to": {
-              "node": 1,
-              "port": 2
-            }
-          }
-        ]
-      },
-      "id": "plasma-cube",
-      "name": "Plasma Cube",
-      "transform": {
-        "translation": [
-          -2.2938428,
-          1.4778395,
-          1.6122942
-        ],
-        "rotation_degrees": [
-          90.0,
-          28.418259,
-          0.0
-        ],
-        "scale": [
-          0.4490696,
-          1.1310111,
-          0.53360224
-        ]
-      },
-      "drawable": {
-        "gi_static": true,
-        "layer": "3d",
-        "mesh": "cube",
-        "texture": "white",
-        "color": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "uv_scale": [
-          1.0,
-          1.0
-        ]
-      }
+      "wires": [
+       {
+        "from": {
+         "node": 2,
+         "port": 0
+        },
+        "to": {
+         "node": 3,
+         "port": 0
+        }
+       },
+       {
+        "from": {
+         "node": 4,
+         "port": 0
+        },
+        "to": {
+         "node": 5,
+         "port": 0
+        }
+       },
+       {
+        "from": {
+         "node": 5,
+         "port": 0
+        },
+        "to": {
+         "node": 1,
+         "port": 3
+        }
+       },
+       {
+        "from": {
+         "node": 3,
+         "port": 0
+        },
+        "to": {
+         "node": 5,
+         "port": 1
+        }
+       }
+      ]
+     },
+     "id": "pulse-cube",
+     "name": "Pulse Cube",
+     "transform": {
+      "translation": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "rotation_degrees": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "scale": [
+       1.0,
+       1.0,
+       1.0
+      ]
+     },
+     "drawable": {
+      "gi_static": true,
+      "layer": "3d",
+      "mesh": "cube",
+      "texture": "white",
+      "color": [
+       1.0,
+       1.0,
+       1.0
+      ],
+      "uv_scale": [
+       1.0,
+       1.0
+      ]
+     }
     }
-  ],
-  "assets": {
-    "pulse-cube-prefab-1": {
-      "kind": "prefab",
-      "path": "assets/pulse-cube-prefab-1.prefab.json"
-    }
+   ]
   }
+ },
+ "fog": {
+  "enabled": false,
+  "color": [
+   0.5,
+   0.6,
+   0.7
+  ],
+  "distance_density": 0.02,
+  "start_distance": 0.0,
+  "height_density": 0.0,
+  "base_height": 0.0,
+  "height_falloff": 1.0
+ },
+ "gi": {
+  "enabled": false,
+  "intensity": 1.0,
+  "normal_bias": 0.05,
+  "volume": {
+   "min": [
+    -5.0,
+    -1.0,
+    -5.0
+   ],
+   "max": [
+    5.0,
+    5.0,
+    5.0
+   ],
+   "resolution": [
+    8,
+    4,
+    8
+   ],
+   "samples": 128,
+   "bounces": 2
+  }
+ },
+ "environment": {
+  "zenith": [
+   0.15,
+   0.32,
+   0.65
+  ],
+  "horizon": [
+   0.65,
+   0.7,
+   0.8
+  ],
+  "ground": [
+   0.12,
+   0.1,
+   0.08
+  ],
+  "intensity": 0.35,
+  "background": true
+ },
+ "display": {
+  "temporal_aa": {
+   "enabled": false,
+   "history_weight": 0.9
+  },
+  "motion_blur": {
+   "enabled": false,
+   "shutter_angle": 180.0,
+   "max_radius": 32.0,
+   "samples": 12
+  },
+  "reflections": {
+   "enabled": false,
+   "strength": 1.0,
+   "max_distance": 30.0,
+   "thickness": 0.2,
+   "roughness_cutoff": 0.65,
+   "steps": 64
+  },
+  "bloom": {
+   "enabled": false,
+   "intensity": 0.15,
+   "threshold": 1.0,
+   "scatter": 0.7,
+   "anamorphic": 0.0
+  },
+  "tone_mapper": "reinhard",
+  "color_grading": {
+   "temperature": 0.0,
+   "tint": 0.0,
+   "saturation": 1.0,
+   "contrast": 1.0,
+   "lift": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "gamma": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "gain": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "ambient_occlusion": {
+   "enabled": false,
+   "intensity": 1.0,
+   "radius": 0.7,
+   "bias": 0.025
+  },
+  "heat_distortion": {
+   "enabled": false,
+   "strength": 3.0,
+   "threshold": 2.0,
+   "speed": 1.0,
+   "rise": 0.08
+  },
+  "grain": {
+   "intensity": 0.0,
+   "size": 1.0
+  },
+  "vignette": {
+   "intensity": 0.0,
+   "roundness": 0.7,
+   "feather": 0.6
+  },
+  "depth_of_field": {
+   "enabled": false,
+   "focus_distance": 5.0,
+   "focal_length_mm": 50.0,
+   "aperture": 2.8,
+   "max_blur_radius": 18.0
+  },
+  "auto_exposure": {
+   "enabled": false,
+   "strength": 1.0,
+   "min_ev": -2.0,
+   "max_ev": 2.0,
+   "target_gray": 0.18,
+   "speed_up": 1.5,
+   "speed_down": 3.0,
+   "center_weight": 0.65
+  },
+  "volumetric_fog": {
+   "enabled": false,
+   "density": 0.035,
+   "albedo": [
+    0.9,
+    0.94,
+    1.0
+   ],
+   "anisotropy": 0.3,
+   "base_height": 0.0,
+   "height_falloff": 0.25,
+   "start_distance": 0.25,
+   "max_distance": 40.0,
+   "noise_amount": 0.65,
+   "noise_scale": 0.35,
+   "wind": [
+    0.15,
+    0.025,
+    0.07
+   ],
+   "light_intensity": 1.0,
+   "ambient": 0.25,
+   "steps": 48
+  },
+  "exposure_ev": 0.0,
+  "tone_mapping": true
+ },
+ "lighting": {
+  "shadows": true,
+  "shadow_resolution": 2048,
+  "shadow_bias": 0.005,
+  "shadow_normal_bias": 0.01,
+  "sun_direction": [
+   0.4,
+   0.8,
+   0.6
+  ],
+  "sun_color": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "sun_intensity": 3.0,
+  "ambient_color": [
+   1.0,
+   1.0,
+   1.0
+  ],
+  "ambient_intensity": 0.03
+ },
+ "version": 1,
+ "name": "Shader Node Lab",
+ "views": {
+  "2d": "camera-2d",
+  "3d": "camera-3d"
+ },
+ "objects": [
+  {
+   "id": "camera-3d",
+   "name": "Camera 3D",
+   "transform": {
+    "translation": [
+     3.2,
+     2.2,
+     5.2
+    ],
+    "rotation_degrees": [
+     -16.91338,
+     27.014135,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "camera": {
+    "projection": "perspective",
+    "vertical_fov_degrees": 55.0,
+    "near": 0.1,
+    "far": 100.0
+   }
+  },
+  {
+   "id": "camera-2d",
+   "name": "Camera 2D",
+   "transform": {
+    "translation": [
+     0.0,
+     0.0,
+     10.0
+    ],
+    "rotation_degrees": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "camera": {
+    "projection": "orthographic",
+    "vertical_size": 7.0,
+    "near": 0.1,
+    "far": 100.0
+   }
+  },
+  {
+   "shader_graph": {
+    "version": 1,
+    "name": "Pulse Emissive",
+    "nodes": [
+     {
+      "id": 1,
+      "position": [
+       560.0,
+       40.0
+      ],
+      "kind": "master",
+      "inputs": [
+       {
+        "vector": [
+         0.8,
+         0.8,
+         0.8
+        ]
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.5
+       },
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 1.0
+       },
+       {
+        "vector": [
+         0.0,
+         1.0,
+         0.0
+        ]
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 2,
+      "position": [
+       -92.41952,
+       40.87422
+      ],
+      "kind": "time",
+      "inputs": [],
+      "slot": "base_color"
+     },
+     {
+      "id": 3,
+      "position": [
+       220.0,
+       40.0
+      ],
+      "kind": "sine",
+      "inputs": [
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 4,
+      "position": [
+       -69.31285,
+       345.89636
+      ],
+      "kind": "append",
+      "inputs": [
+       {
+        "float": 1.0
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "float": 1.0
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 5,
+      "position": [
+       290.6893,
+       346.41217
+      ],
+      "kind": "scale_vector",
+      "inputs": [
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 0.5
+       }
+      ],
+      "slot": "base_color"
+     }
+    ],
+    "wires": [
+     {
+      "from": {
+       "node": 2,
+       "port": 0
+      },
+      "to": {
+       "node": 3,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 4,
+       "port": 0
+      },
+      "to": {
+       "node": 5,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 5,
+       "port": 0
+      },
+      "to": {
+       "node": 1,
+       "port": 3
+      }
+     },
+     {
+      "from": {
+       "node": 3,
+       "port": 0
+      },
+      "to": {
+       "node": 5,
+       "port": 1
+      }
+     }
+    ]
+   },
+   "id": "pulse-cube",
+   "name": "Pulse Cube",
+   "transform": {
+    "translation": [
+     -1.1,
+     0.6,
+     0.0
+    ],
+    "rotation_degrees": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "drawable": {
+    "gi_static": true,
+    "layer": "3d",
+    "mesh": "cube",
+    "texture": "white",
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "uv_scale": [
+     1.0,
+     1.0
+    ]
+   }
+  },
+  {
+   "shader_graph": {
+    "version": 1,
+    "name": "Texture Fade",
+    "nodes": [
+     {
+      "id": 1,
+      "position": [
+       576.8615,
+       -55.72977
+      ],
+      "kind": "master",
+      "inputs": [
+       {
+        "vector": [
+         1.0,
+         1.0,
+         1.0
+        ]
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.8
+       },
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 1.0
+       },
+       {
+        "vector": [
+         0.5,
+         0.5,
+         1.0
+        ]
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 2,
+      "position": [
+       -102.627686,
+       90.06161
+      ],
+      "kind": "texture_sample",
+      "inputs": [
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 3,
+      "position": [
+       264.06802,
+       201.67519
+      ],
+      "kind": "one_minus",
+      "inputs": [
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "base_color"
+     }
+    ],
+    "wires": [
+     {
+      "from": {
+       "node": 2,
+       "port": 0
+      },
+      "to": {
+       "node": 1,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 2,
+       "port": 1
+      },
+      "to": {
+       "node": 3,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 3,
+       "port": 0
+      },
+      "to": {
+       "node": 1,
+       "port": 4
+      }
+     }
+    ]
+   },
+   "id": "fade-cube",
+   "name": "Fade Cube",
+   "transform": {
+    "translation": [
+     1.1,
+     0.6,
+     0.0
+    ],
+    "rotation_degrees": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "drawable": {
+    "gi_static": true,
+    "layer": "3d",
+    "mesh": "cube",
+    "texture": "checker",
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "uv_scale": [
+     1.0,
+     1.0
+    ]
+   },
+   "collider": {
+    "center": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "size": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "enabled": true
+   }
+  },
+  {
+   "id": "floor",
+   "name": "Floor",
+   "transform": {
+    "translation": [
+     0.0,
+     -0.35,
+     0.0
+    ],
+    "rotation_degrees": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     8.0,
+     0.1,
+     8.0
+    ]
+   },
+   "drawable": {
+    "gi_static": true,
+    "layer": "3d",
+    "mesh": "cube",
+    "texture": "checker",
+    "color": [
+     0.32,
+     0.42,
+     0.5
+    ],
+    "uv_scale": [
+     8.0,
+     8.0
+    ]
+   },
+   "collider": {
+    "center": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "size": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "enabled": true
+   }
+  },
+  {
+   "shader_graph": {
+    "version": 1,
+    "name": "Pulse Emissive",
+    "nodes": [
+     {
+      "id": 1,
+      "position": [
+       560.0,
+       40.0
+      ],
+      "kind": "master",
+      "inputs": [
+       {
+        "vector": [
+         0.8,
+         0.8,
+         0.8
+        ]
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.5
+       },
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 1.0
+       },
+       {
+        "vector": [
+         0.0,
+         1.0,
+         0.0
+        ]
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 2,
+      "position": [
+       -92.41952,
+       40.87422
+      ],
+      "kind": "time",
+      "inputs": [],
+      "slot": "base_color"
+     },
+     {
+      "id": 3,
+      "position": [
+       220.0,
+       40.0
+      ],
+      "kind": "sine",
+      "inputs": [
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 4,
+      "position": [
+       -69.31285,
+       345.89636
+      ],
+      "kind": "append",
+      "inputs": [
+       {
+        "float": 0.6
+       },
+       {
+        "float": 0.15
+       },
+       {
+        "float": 1.0
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 5,
+      "position": [
+       290.6893,
+       346.41217
+      ],
+      "kind": "scale_vector",
+      "inputs": [
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 0.5
+       }
+      ],
+      "slot": "base_color"
+     }
+    ],
+    "wires": [
+     {
+      "from": {
+       "node": 2,
+       "port": 0
+      },
+      "to": {
+       "node": 3,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 4,
+       "port": 0
+      },
+      "to": {
+       "node": 5,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 5,
+       "port": 0
+      },
+      "to": {
+       "node": 1,
+       "port": 3
+      }
+     },
+     {
+      "from": {
+       "node": 3,
+       "port": 0
+      },
+      "to": {
+       "node": 5,
+       "port": 1
+      }
+     }
+    ]
+   },
+   "id": "prefab-6",
+   "name": "Pulse Cube",
+   "transform": {
+    "translation": [
+     0.5725765,
+     1.8194954,
+     -0.17015934
+    ],
+    "rotation_degrees": [
+     -12.621561,
+     0.0,
+     -14.364544
+    ],
+    "scale": [
+     0.47361946,
+     0.47361946,
+     0.47361946
+    ]
+   },
+   "drawable": {
+    "gi_static": true,
+    "layer": "3d",
+    "mesh": "cube",
+    "texture": "white",
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "uv_scale": [
+     1.0,
+     1.0
+    ]
+   },
+   "collider": {
+    "center": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "size": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "enabled": true
+   },
+   "gravity": {
+    "enabled": true,
+    "acceleration": 9.81,
+    "max_speed": 50.0,
+    "jump_speed": 5.0,
+    "mass": 1.0,
+    "friction": 0.6,
+    "restitution": 0.0,
+    "angular_damping": 0.1
+   }
+  },
+  {
+   "shader_graph": {
+    "version": 1,
+    "name": "New Shader",
+    "nodes": [
+     {
+      "id": 1,
+      "position": [
+       300.0,
+       40.0
+      ],
+      "kind": "master",
+      "inputs": [
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 2,
+      "position": [
+       -11.43586,
+       114.52354
+      ],
+      "kind": "color",
+      "inputs": [
+       {
+        "vector": [
+         0.670502,
+         0.021524647,
+         0.021524647
+        ]
+       }
+      ],
+      "slot": "base_color"
+     }
+    ],
+    "wires": [
+     {
+      "from": {
+       "node": 2,
+       "port": 0
+      },
+      "to": {
+       "node": 1,
+       "port": 0
+      }
+     }
+    ]
+   },
+   "id": "object-1",
+   "name": "Cube",
+   "transform": {
+    "translation": [
+     -3.2327945,
+     1.9897983,
+     -2.4656744
+    ],
+    "rotation_degrees": [
+     -29.691761,
+     0.0,
+     0.0
+    ],
+    "scale": [
+     0.7285043,
+     0.7285043,
+     0.7285043
+    ]
+   },
+   "drawable": {
+    "gi_static": true,
+    "layer": "3d",
+    "mesh": "cube",
+    "texture": "white",
+    "color": [
+     0.25,
+     0.8,
+     0.7
+    ],
+    "uv_scale": [
+     1.0,
+     1.0
+    ]
+   }
+  },
+  {
+   "shader_graph": {
+    "version": 1,
+    "name": "Plasma Core",
+    "nodes": [
+     {
+      "id": 1,
+      "position": [
+       1410.8191,
+       304.8588
+      ],
+      "kind": "master",
+      "inputs": [
+       {
+        "vector": [
+         0.02,
+         0.02,
+         0.03
+        ]
+       },
+       {
+        "float": 0.9
+       },
+       {
+        "float": 0.22
+       },
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 1.0
+       },
+       {
+        "vector": [
+         0.0,
+         1.0,
+         0.0
+        ]
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 2,
+      "position": [
+       -760.0,
+       60.0
+      ],
+      "kind": "time",
+      "inputs": [],
+      "slot": "emissive"
+     },
+     {
+      "id": 3,
+      "position": [
+       -760.0,
+       260.0
+      ],
+      "kind": "world_position",
+      "inputs": [],
+      "slot": "emissive"
+     },
+     {
+      "id": 4,
+      "position": [
+       -560.0,
+       260.0
+      ],
+      "kind": "split",
+      "inputs": [
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 5,
+      "position": [
+       -360.0,
+       240.0
+      ],
+      "kind": "multiply",
+      "inputs": [
+       {
+        "float": 20.0
+       },
+       {
+        "float": 20.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 6,
+      "position": [
+       -360.0,
+       80.0
+      ],
+      "kind": "multiply",
+      "inputs": [
+       {
+        "float": 3.0
+       },
+       {
+        "float": 3.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 7,
+      "position": [
+       -160.0,
+       160.0
+      ],
+      "kind": "subtract",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 8,
+      "position": [
+       40.0,
+       60.0
+      ],
+      "kind": "sine",
+      "inputs": [
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 9,
+      "position": [
+       220.0,
+       60.0
+      ],
+      "kind": "clamp",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "float": 1.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 10,
+      "position": [
+       380.0,
+       40.0
+      ],
+      "kind": "power",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 6.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 11,
+      "position": [
+       40.0,
+       280.0
+      ],
+      "kind": "add",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 2.1
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 12,
+      "position": [
+       220.0,
+       280.0
+      ],
+      "kind": "sine",
+      "inputs": [
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 13,
+      "position": [
+       380.0,
+       280.0
+      ],
+      "kind": "clamp",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "float": 1.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 14,
+      "position": [
+       560.0,
+       40.0
+      ],
+      "kind": "one_minus",
+      "inputs": [
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 15,
+      "position": [
+       560.0,
+       200.0
+      ],
+      "kind": "lerp",
+      "inputs": [
+       {
+        "float": 0.15
+       },
+       {
+        "float": 1.0
+       },
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 16,
+      "position": [
+       720.0,
+       120.0
+      ],
+      "kind": "append",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.85
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 17,
+      "position": [
+       900.0,
+       120.0
+      ],
+      "kind": "scale_vector",
+      "inputs": [
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 20,
+      "position": [
+       -760.0,
+       480.0
+      ],
+      "kind": "world_normal",
+      "inputs": [],
+      "slot": "emissive"
+     },
+     {
+      "id": 21,
+      "position": [
+       -760.0,
+       620.0
+      ],
+      "kind": "view_direction",
+      "inputs": [],
+      "slot": "emissive"
+     },
+     {
+      "id": 22,
+      "position": [
+       -560.0,
+       550.0
+      ],
+      "kind": "dot",
+      "inputs": [
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 23,
+      "position": [
+       -360.0,
+       550.0
+      ],
+      "kind": "clamp",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 0.0
+       },
+       {
+        "float": 1.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 24,
+      "position": [
+       -160.0,
+       550.0
+      ],
+      "kind": "one_minus",
+      "inputs": [
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 25,
+      "position": [
+       40.0,
+       550.0
+      ],
+      "kind": "power",
+      "inputs": [
+       {
+        "float": 0.0
+       },
+       {
+        "float": 3.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 26,
+      "position": [
+       380.0,
+       620.0
+      ],
+      "kind": "append",
+      "inputs": [
+       {
+        "float": 1.0
+       },
+       {
+        "float": 0.6
+       },
+       {
+        "float": 0.25
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 27,
+      "position": [
+       560.0,
+       620.0
+      ],
+      "kind": "scale_vector",
+      "inputs": [
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "float": 0.0
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 28,
+      "position": [
+       1080.0,
+       380.0
+      ],
+      "kind": "add_vector",
+      "inputs": [
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       },
+       {
+        "vector": [
+         0.0,
+         0.0,
+         0.0
+        ]
+       }
+      ],
+      "slot": "emissive"
+     },
+     {
+      "id": 30,
+      "position": [
+       1000.0,
+       20.0
+      ],
+      "kind": "color",
+      "inputs": [
+       {
+        "vector": [
+         0.020000005,
+         0.02,
+         0.03
+        ]
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 31,
+      "position": [
+       1000.0,
+       160.0
+      ],
+      "kind": "float",
+      "inputs": [
+       {
+        "float": 0.9
+       }
+      ],
+      "slot": "base_color"
+     },
+     {
+      "id": 32,
+      "position": [
+       1000.0,
+       300.0
+      ],
+      "kind": "float",
+      "inputs": [
+       {
+        "float": 0.22
+       }
+      ],
+      "slot": "base_color"
+     }
+    ],
+    "wires": [
+     {
+      "from": {
+       "node": 3,
+       "port": 0
+      },
+      "to": {
+       "node": 4,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 4,
+       "port": 1
+      },
+      "to": {
+       "node": 5,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 2,
+       "port": 0
+      },
+      "to": {
+       "node": 6,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 5,
+       "port": 0
+      },
+      "to": {
+       "node": 7,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 6,
+       "port": 0
+      },
+      "to": {
+       "node": 7,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 7,
+       "port": 0
+      },
+      "to": {
+       "node": 8,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 8,
+       "port": 0
+      },
+      "to": {
+       "node": 9,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 9,
+       "port": 0
+      },
+      "to": {
+       "node": 10,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 7,
+       "port": 0
+      },
+      "to": {
+       "node": 11,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 11,
+       "port": 0
+      },
+      "to": {
+       "node": 12,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 12,
+       "port": 0
+      },
+      "to": {
+       "node": 13,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 9,
+       "port": 0
+      },
+      "to": {
+       "node": 14,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 13,
+       "port": 0
+      },
+      "to": {
+       "node": 15,
+       "port": 2
+      }
+     },
+     {
+      "from": {
+       "node": 14,
+       "port": 0
+      },
+      "to": {
+       "node": 16,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 15,
+       "port": 0
+      },
+      "to": {
+       "node": 16,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 16,
+       "port": 0
+      },
+      "to": {
+       "node": 17,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 10,
+       "port": 0
+      },
+      "to": {
+       "node": 17,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 20,
+       "port": 0
+      },
+      "to": {
+       "node": 22,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 21,
+       "port": 0
+      },
+      "to": {
+       "node": 22,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 22,
+       "port": 0
+      },
+      "to": {
+       "node": 23,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 23,
+       "port": 0
+      },
+      "to": {
+       "node": 24,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 24,
+       "port": 0
+      },
+      "to": {
+       "node": 25,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 26,
+       "port": 0
+      },
+      "to": {
+       "node": 27,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 25,
+       "port": 0
+      },
+      "to": {
+       "node": 27,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 17,
+       "port": 0
+      },
+      "to": {
+       "node": 28,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 27,
+       "port": 0
+      },
+      "to": {
+       "node": 28,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 28,
+       "port": 0
+      },
+      "to": {
+       "node": 1,
+       "port": 3
+      }
+     },
+     {
+      "from": {
+       "node": 30,
+       "port": 0
+      },
+      "to": {
+       "node": 1,
+       "port": 0
+      }
+     },
+     {
+      "from": {
+       "node": 31,
+       "port": 0
+      },
+      "to": {
+       "node": 1,
+       "port": 1
+      }
+     },
+     {
+      "from": {
+       "node": 32,
+       "port": 0
+      },
+      "to": {
+       "node": 1,
+       "port": 2
+      }
+     }
+    ]
+   },
+   "id": "plasma-cube",
+   "name": "Plasma Cube",
+   "transform": {
+    "translation": [
+     -2.2938428,
+     1.4778395,
+     1.6122942
+    ],
+    "rotation_degrees": [
+     90.0,
+     28.418259,
+     0.0
+    ],
+    "scale": [
+     0.4490696,
+     1.1310111,
+     0.53360224
+    ]
+   },
+   "drawable": {
+    "gi_static": true,
+    "layer": "3d",
+    "mesh": "cube",
+    "texture": "white",
+    "color": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "uv_scale": [
+     1.0,
+     1.0
+    ]
+   }
+  }
+ ],
+ "assets": {
+  "pulse-cube-prefab-1": {
+   "kind": "prefab",
+   "path": "assets/pulse-cube-prefab-1.prefab.json"
+  }
+ }
 }

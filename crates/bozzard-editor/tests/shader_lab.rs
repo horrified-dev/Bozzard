@@ -37,6 +37,16 @@ fn shader_lab_loads_and_codegens_all_graphs() {
     assert!(wsource.surface.contains("params.normal"));
     assert!(wsource.surface.contains("params.emissive"));
     assert!(!wsource.surface.contains("params.alpha ="));
+    // A wave constant accidentally left on a wired input codegens to `* 0.0`,
+    // flattening every sine to a constant (ship-stopping: renders uniform).
+    for graph in graphs.iter().chain(water_graphs.iter()) {
+        let code = shader_source(graph).unwrap();
+        assert!(
+            !code.surface.contains("* 0.0)"),
+            "{} has a zeroed multiplier",
+            graph.name
+        );
+    }
     // Pulse Emissive drives only Emissive; Texture Fade drives Base Color and Alpha.
     let pulse = shader_source(graphs.iter().find(|g| g.name == "Pulse Emissive").unwrap())
         .unwrap()
