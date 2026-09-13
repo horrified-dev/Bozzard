@@ -16,6 +16,7 @@ pub struct AssetBrowser {
     selected_shader: Option<std::path::PathBuf>,
     show_details: bool,
     thumbnails: HashMap<String, Thumbnail>,
+    meshes: HashMap<String, (u64, MeshPreview)>,
     catalog_revision: u64,
 }
 
@@ -171,7 +172,7 @@ impl AssetBrowser {
                 });
         }
         self.prune_thumbnails(editor);
-        let assets = snapshots(editor);
+        let assets = snapshots(editor, &mut self.meshes);
         if self
             .selected
             .as_ref()
@@ -603,6 +604,13 @@ impl AssetBrowser {
             self.thumbnails.clear();
             self.catalog_revision = editor.asset_revision();
         }
+        self.meshes.retain(|id, (revision, _)| {
+            editor
+                .assets
+                .handle(id)
+                .and_then(|handle| editor.assets.get(handle))
+                .is_some_and(|entry| entry.revision() == *revision)
+        });
         self.thumbnails.retain(|id, thumbnail| {
             editor
                 .assets
@@ -917,7 +925,10 @@ fn set_error(output: &mut AssetBrowserOutput, error: anyhow::Error) {
     });
 }
 
-fn snapshots(editor: &Editor) -> Vec<AssetSnapshot> {
+fn snapshots(
+    editor: &Editor,
+    mesh_cache: &mut HashMap<String, (u64, MeshPreview)>,
+) -> Vec<AssetSnapshot> {
     let users = editor.scene().asset_users();
     editor
         .assets
@@ -926,7 +937,18 @@ fn snapshots(editor: &Editor) -> Vec<AssetSnapshot> {
             let source = editor.scene().assets.get(&entry.id)?;
             let (image, mesh) = match entry.data() {
                 Some(AssetData::Image(image)) => (Some((image.width, image.height)), None),
-                Some(AssetData::Mesh(mesh)) => (None, Some(sample_mesh(mesh))),
+                Some(AssetData::Mesh(mesh)) => {
+                    let revision = entry.revision();
+                    let sampled = match mesh_cache.get(&entry.id) {
+                        Some((r, preview)) if *r == revision => preview.clone(),
+                        _ => {
+                            let preview = sample_mesh(mesh);
+                            mesh_cache.insert(entry.id.clone(), (revision, preview.clone()));
+                            preview
+                        }
+                    };
+                    (None, Some(sampled))
+                }
                 Some(AssetData::Prefab(_)) | None => (None, None),
             };
             Some(AssetSnapshot {
@@ -1325,7 +1347,7 @@ mod tests {
                 );
             }
         }
-        let asset = snapshots(&editor).remove(0);
+        let asset = snapshots(&editor, &mut HashMap::new()).remove(0);
         assert!(matches!(asset.state, LoadState::Ready));
         for editing in [false, true] {
             let ctx = egui::Context::default();
@@ -1374,7 +1396,7 @@ mod prefab_tests {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../examples/demo/scenes/prefab-lab.json");
         let mut editor = Editor::open(&path).unwrap();
-        let asset = snapshots(&editor)
+        let asset = snapshots(&editor, &mut HashMap::new())
             .into_iter()
             .find(|a| a.kind == AssetKind::Prefab)
             .unwrap();
