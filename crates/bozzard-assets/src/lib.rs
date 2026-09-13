@@ -9,7 +9,7 @@ use anyhow::{Context, Result, bail, ensure};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use bozzard_scene::{AssetKind, AssetSource};
 use glam::{Mat3, Mat4, Vec3};
-pub use package::{ModelPackage, package_gltf};
+pub use package::{ModelPackage, SourcePackage, package_gltf, package_model};
 pub use pbr::{Filter, PbrMaterial, Sampler, SurfaceShading, TextureMap, Wrap};
 pub use picking::{MeshHit, MeshPickStats};
 use std::{

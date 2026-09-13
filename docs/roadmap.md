@@ -42,13 +42,15 @@ Remaining editor extensions: generic component reflection, arbitrary tab docking
 
 See [run commands and manual acceptance checklist](playable-demo.md). This is a single kinematic box character, not skeletal animation, full physics or a game export pipeline. Optional gameplay Blueprints now complement the coded controller. Manual pointer/platform verification remains separate from automated simulation/rendering checks.
 
-## 5 — First user-game export
+## 5 — First user-game export (native folder implemented)
 
-- Project manifest and selected runtime modules.
-- Asset cooker and deterministic package manifest.
-- Native target builds dispatched through CI.
-- Playable exported project tested outside its source directory.
-- Minimum OS baselines, dependency notices, signing/notarization plan.
+- Implemented: project manifest with starting scene/view and the standard compiled runtime.
+- Implemented: editor Export game, transitive asset packaging, deterministic inventory/ZIP.
+- Implemented: First Trail relocation and full-route acceptance without build tools or source assets.
+- Native CI definitions now export and verify First Trail on all three target platforms.
+- Remaining distribution work: selected-module builds, certified minimum OS baselines, dependency notices, signing/notarization.
+
+See [export workflow, verification scope and distribution limits](exporting.md).
 
 ## 6 — Simulation and content systems
 

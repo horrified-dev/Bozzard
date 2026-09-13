@@ -74,6 +74,16 @@ jobs:
           else
             python3 tools/package.py --verify --backend "$BACKEND" $SOFTWARE
           fi
+      - name: Export First Trail and verify the relocated game
+        env:
+          BACKEND: ${{ matrix.backend }}
+          SOFTWARE: ${{ matrix.software }}
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            xvfb-run -a python3 tools/package.py --project examples/demo/first-trail.bozzard.json --export-dir dist/first-trail --verify --verify-first-trail --window --backend "$BACKEND" $SOFTWARE
+          else
+            python3 tools/package.py --project examples/demo/first-trail.bozzard.json --export-dir dist/first-trail --verify --verify-first-trail --backend "$BACKEND" $SOFTWARE
+          fi
       - name: Upload pixel diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -82,6 +92,7 @@ jobs:
           path: |
             work/package-smoke/*.ppm
             work/editor-package-smoke/*.ppm
+            work/export-package-smoke/*.ppm
           if-no-files-found: ignore
       - name: Upload native development bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

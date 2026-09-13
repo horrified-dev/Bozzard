@@ -211,6 +211,11 @@ Foundation CI passed on all three hosted platforms at [`d319721`](https://github
 
 ## Development bundles
 
+For a standalone user game, open a scene in the editor and choose **File → Export game…**.
+The exported **Game.app / Game.exe / Game** starts its own scene without Rust or the source
+checkout. First Trail includes a project manifest and complete-route export verification.
+See [native game export](docs/exporting.md) for build commands, ZIP packaging and platform scope.
+
 ```sh
 cargo build --release --locked -p bozzard-player -p bozzard-server -p bozzard-editor-app
 python3 tools/package.py --verify --window --editor-window
@@ -218,7 +223,7 @@ python3 tools/package.py --verify --window --editor-window
 
 This builds a host-native ZIP in `dist/`, including macOS `.app` bundles for the player and editor on macOS, editable built-in/imported scenes, and their image and model files. `--editor-window` additionally runs the packaged editor smoke and captures its UI. Default scene data, shaders and procedural textures are embedded, so the executables can run without the source checkout. Verification extracts the ZIP, runs a headless imported-scene save, loads that snapshot in the GPU suite, and optionally presents both native views from an empty working directory.
 
-This is development demo packaging, not a general user-game export pipeline. OS runtimes and drivers remain prerequisites. Public distribution still needs license/notices, signing/notarization, installer choices, and minimum OS/runtime baselines.
+The commands above create the development demo bundle. Use `tools/package.py --project` for a user-game export. OS runtimes and drivers remain prerequisites. Public distribution still needs license/notices, signing/notarization, installer choices, and minimum OS/runtime baselines.
 
 ## Cross-platform CI
 

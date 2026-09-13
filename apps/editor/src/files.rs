@@ -4,14 +4,18 @@ pub enum Kind {
     Open,
     Save,
     Import,
+    Export,
+    Exported,
     LoadBlueprint,
     SaveBlueprint,
 }
 pub struct Dialog {
     pub kind: Kind,
+    pub project_name: String,
+    pub export_error: Option<String>,
     pub blueprint_target: Option<(PathBuf, u64, String, usize)>,
-    directory: PathBuf,
-    path: String,
+    pub(super) directory: PathBuf,
+    pub(super) path: String,
     overwrite: bool,
 }
 impl Dialog {
@@ -24,6 +28,8 @@ impl Dialog {
         };
         Self {
             kind,
+            project_name: String::new(),
+            export_error: None,
             blueprint_target: None,
             directory,
             path: path.display().to_string(),
@@ -36,12 +42,19 @@ impl App {
         let Some(mut dialog) = self.dialog.take() else {
             return;
         };
+        if matches!(dialog.kind, Kind::Export | Kind::Exported) {
+            if self.export_dialog(ctx, &mut dialog) {
+                self.dialog = Some(dialog);
+            }
+            return;
+        }
         let mut keep = true;
         let mut chosen = None;
         let title = match dialog.kind {
             Kind::Open => "Open scene",
             Kind::Save => "Save scene as",
             Kind::Import => "Import image, model or prefab",
+            Kind::Export | Kind::Exported => unreachable!("export uses its own dialog"),
             Kind::LoadBlueprint => "Load and attach Blueprint copy",
             Kind::SaveBlueprint => "Save Blueprint graph",
         };
@@ -84,6 +97,7 @@ impl App {
                                     .to_ascii_lowercase();
                                 let valid = folder
                                     || match dialog.kind {
+                                        Kind::Export | Kind::Exported => unreachable!(),
                                         Kind::Import => {
                                             matches!(
                                                 ext.as_str(),
@@ -159,6 +173,7 @@ impl App {
                 Ok(path) => match dialog.kind {
                     Kind::Open => self.request(Pending::Open(path)),
                     Kind::Save => self.save_scene(path),
+                    Kind::Export | Kind::Exported => unreachable!(),
                     Kind::Import => {
                         self.start_import(path);
                     }

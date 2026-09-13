@@ -6,6 +6,45 @@ pub struct ModelPackage {
     pub files: BTreeMap<String, Vec<u8>>,
 }
 
+/// Preserve model bytes and dependency names for runtime export. Unlike import conversion,
+/// this keeps material/surface identities and baked-lighting fingerprints unchanged.
+pub struct SourcePackage {
+    pub primary: String,
+    pub files: BTreeMap<String, Vec<u8>>,
+}
+
+pub fn package_model(path: &Path, progress: &job::Progress) -> Result<SourcePackage> {
+    progress.stage("Reading model and dependencies")?;
+    let snapshot = source_snapshot(path)?;
+    let primary = path
+        .file_name()
+        .and_then(|p| p.to_str())
+        .context("model filename is not UTF-8")?
+        .to_owned();
+    let mut files = BTreeMap::new();
+    files.insert(
+        primary.clone(),
+        snapshot.primary.map_err(anyhow::Error::msg)?,
+    );
+    for (dependency, bytes) in snapshot.dependencies {
+        progress.check()?;
+        let relative = dependency.strip_prefix(path.parent().unwrap_or(Path::new(".")))?;
+        ensure!(
+            relative.components().all(|c| matches!(
+                c,
+                std::path::Component::Normal(_) | std::path::Component::CurDir
+            )),
+            "model dependency escapes export"
+        );
+        let name = relative
+            .to_str()
+            .context("model dependency is not UTF-8")?
+            .replace('\\', "/");
+        files.insert(name, bytes.map_err(anyhow::Error::msg)?);
+    }
+    Ok(SourcePackage { primary, files })
+}
+
 pub fn package_gltf(path: &Path, progress: &job::Progress) -> Result<ModelPackage> {
     progress.stage("Reading model resources")?;
     let snapshot = source_snapshot(path)?;

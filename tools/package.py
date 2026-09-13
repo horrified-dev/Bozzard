@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Bundle the native demo binaries and optionally verify a clean extraction.
 
-This is a foundation for exporting; it does not yet cook assets or build user games.
+Use --project to export a user game with the native player and cooked assets.
+Without --project, build the engine development bundle.
 Only Python's standard library is required. Run Cargo's native build first.
 """
 
@@ -23,6 +24,9 @@ def run(binary, *args, cwd):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--project", type=Path, help="Export a user-game project manifest")
+    parser.add_argument("--export-dir", type=Path, help="New output folder for --project")
+    parser.add_argument("--verify-first-trail", action="store_true", help="Verify the First Trail route and restart in the exported runtime")
     parser.add_argument("--profile", choices=["debug", "release"], default="release")
     parser.add_argument("--verify", action="store_true")
     parser.add_argument("--window", action="store_true", help="Also present 3 frames; needs a desktop session")
@@ -34,6 +38,15 @@ def main():
     args = parser.parse_args()
     if (args.window or args.editor_window) and not args.verify:
         parser.error("window checks require --verify")
+
+    if args.project:
+        if args.editor_window:
+            parser.error("--editor-window is for development bundles")
+        from export_game import export_game
+        export_game(args, ROOT)
+        return
+    if args.export_dir or args.verify_first_trail:
+        parser.error("--export-dir and --verify-first-trail require --project")
 
     system = platform.system().lower()
     machine = platform.machine().lower()

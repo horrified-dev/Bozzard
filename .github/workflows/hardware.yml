@@ -34,6 +34,10 @@ jobs:
         env:
           BACKEND: ${{ inputs.backend }}
         run: python3 tools/package.py --verify --window --editor-window --hardware --backend "$BACKEND"
+      - name: Export and complete First Trail on hardware
+        env:
+          BACKEND: ${{ inputs.backend }}
+        run: python3 tools/package.py --project examples/demo/first-trail.bozzard.json --export-dir dist/first-trail --verify --verify-first-trail --window --hardware --backend "$BACKEND"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
@@ -41,4 +45,5 @@ jobs:
           path: |
             work/package-smoke/*.ppm
             work/editor-package-smoke/*.ppm
+            work/export-package-smoke/*.ppm
           if-no-files-found: ignore

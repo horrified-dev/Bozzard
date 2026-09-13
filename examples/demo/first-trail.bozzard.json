@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "name": "First Trail",
+  "start_scene": "scenes/first-trail.json",
+  "view": "3d"
+}

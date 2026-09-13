@@ -19,6 +19,7 @@ mod asset_browser;
 mod blueprints;
 mod cameras;
 mod colliders;
+mod export;
 mod files;
 mod fog;
 mod framing;
@@ -131,6 +132,7 @@ struct App {
     preview_bypass: bool,
     last_assets: Instant,
     dialog: Option<files::Dialog>,
+    export_parent: Option<PathBuf>,
     pending: Option<Pending>,
     confirm_discard: bool,
     allow_close: bool,
@@ -157,6 +159,7 @@ struct App {
     smoke_prefab_frame: Option<u32>,
     smoke_blueprint_frame: Option<u32>,
     smoke_object_reference_frame: Option<u32>,
+    smoke_export_started: bool,
 }
 #[derive(Clone)]
 struct HierarchyDrag(String);
@@ -221,6 +224,7 @@ impl App {
             preview_bypass: false,
             last_assets: Instant::now() - Duration::from_secs(1),
             dialog: None,
+            export_parent: None,
             pending: None,
             confirm_discard: false,
             allow_close: false,
@@ -247,6 +251,7 @@ impl App {
             smoke_prefab_frame: None,
             smoke_blueprint_frame: None,
             smoke_object_reference_frame: None,
+            smoke_export_started: false,
         })
     }
     fn result(&mut self, result: Result<()>) {
@@ -428,6 +433,10 @@ impl App {
                                 .clicked()
                             {
                                 self.save_scene(self.editor.path.clone());
+                                ui.close();
+                            }
+                            if ui.button("Export game…").clicked() {
+                                self.show_export_dialog();
                                 ui.close();
                             }
                             if ui.button("Save as…").clicked() {
@@ -1473,6 +1482,7 @@ fn untitled_scene_path() -> Result<PathBuf> {
 
 fn main() -> Result<()> {
     let mut source = None;
+    let mut project = None;
     let mut smoke = None;
     let mut backend = Backend::native();
     let mut software = false;
@@ -1481,6 +1491,11 @@ fn main() -> Result<()> {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--scene" => source = Some(PathBuf::from(args.next().context("--scene needs a path")?)),
+            "--project" => {
+                project = Some(PathBuf::from(
+                    args.next().context("--project needs a manifest")?,
+                ))
+            }
             "--smoke" => {
                 smoke = Some(PathBuf::from(
                     args.next().context("--smoke needs an output directory")?,
@@ -1491,7 +1506,7 @@ fn main() -> Result<()> {
             "--hardware" => hardware = true,
             "--help" => {
                 println!(
-                    "bozzard-editor [--scene FILE] [--backend metal|vulkan|dx12] [--software|--hardware] [--smoke DIRECTORY]\nNative scene editor. Import PNG/JPEG/OBJ/glTF/GLB, edit objects, save, and use Play/Stop."
+                    "bozzard-editor [--scene FILE] [--backend metal|vulkan|dx12] [--software|--hardware] [--smoke DIRECTORY]\nNative scene editor. --project FILE opens a game project. Import assets, edit, Play/Stop, and File > Export game."
                 );
                 return Ok(());
             }
@@ -1502,6 +1517,15 @@ fn main() -> Result<()> {
         !(software && hardware),
         "choose software or hardware, not both"
     );
+    ensure!(
+        source.is_none() || project.is_none(),
+        "--project and --scene are mutually exclusive"
+    );
+    if let Some(path) = project {
+        let (project, scene) = bozzard_project::Project::load(&path)?;
+        project.validate_scene(&bozzard_demo::load_document(Some(&scene))?)?;
+        source = Some(scene);
+    }
     let editor = if let Some(path) = source {
         let path = std::path::absolute(path)?;
         Editor::new_pending(
