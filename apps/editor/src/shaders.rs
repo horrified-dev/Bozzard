@@ -259,27 +259,45 @@ impl App {
                 }
             });
         });
-        ui.small("Drag headers to move · Output → input to connect · Right-click input to disconnect · Middle-drag / scroll to pan · Ctrl+scroll to zoom · Preview frames the selected object");
-        if let Err(error) = self.shader_preview(ui) {
-            ui.colored_label(egui::Color32::LIGHT_RED, format!("Preview: {error:#}"));
-        }
-        if editing && !ui.ctx().egui_wants_keyboard_input() {
-            if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
-                self.shader_pane.connecting = None;
-                self.shader_pane.selected = None;
-            }
-            if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Delete))
-                && let Some(id) = self.shader_pane.selected.take()
-                && graph.node(id).is_ok_and(|n| n.kind != NodeKind::Master)
-            {
-                graph.remove_node(id);
-                self.shader_pane.connecting = None;
-            }
-        }
-        let error = self.shader_pane.canvas(ui, &mut graph, editing);
-        if let Some(error) = error {
-            self.result(Err(error));
-        }
+        ui.small("Drag headers to move · Output → input to connect · Right-click input to disconnect · Middle-drag / scroll to pan · Ctrl+scroll to zoom · Live preview on the right");
+        ui.horizontal_top(|ui| {
+            let preview_width = (ui.available_width() * 0.34).clamp(240., 480.);
+            let canvas_width = (ui.available_width() - preview_width - 10.).max(320.);
+            ui.allocate_ui_with_layout(
+                Vec2::new(canvas_width, ui.available_height()),
+                egui::Layout::top_down(egui::Align::Min),
+                |ui| {
+                    if editing && !ui.ctx().egui_wants_keyboard_input() {
+                        if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
+                        {
+                            self.shader_pane.connecting = None;
+                            self.shader_pane.selected = None;
+                        }
+                        if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Delete))
+                            && let Some(id) = self.shader_pane.selected.take()
+                            && graph.node(id).is_ok_and(|n| n.kind != NodeKind::Master)
+                        {
+                            graph.remove_node(id);
+                            self.shader_pane.connecting = None;
+                        }
+                    }
+                    let error = self.shader_pane.canvas(ui, &mut graph, editing);
+                    if let Some(error) = error {
+                        self.result(Err(error));
+                    }
+                },
+            );
+            ui.separator();
+            ui.allocate_ui_with_layout(
+                Vec2::new(preview_width, ui.available_height()),
+                egui::Layout::top_down(egui::Align::Min),
+                |ui| {
+                    if let Err(error) = self.shader_preview(ui) {
+                        ui.colored_label(egui::Color32::LIGHT_RED, format!("Preview: {error:#}"));
+                    }
+                },
+            );
+        });
         if editing && Some(&graph) != object.shader_graph.as_ref() {
             self.editor.begin_gesture("Edit shader graph");
             let result = self.editor.set_shader_graph(&object.id, Some(graph));
@@ -293,11 +311,7 @@ impl App {
     /// pane-owned clock advances display time so Time nodes animate without
     /// pressing Play.
     fn shader_preview(&mut self, ui: &mut egui::Ui) -> Result<()> {
-        let height = (ui.available_height() * 0.35).clamp(140., 280.);
-        let (rect, _) = ui.allocate_exact_size(
-            Vec2::new(ui.available_width().max(1.), height),
-            Sense::hover(),
-        );
+        let (rect, _) = ui.allocate_exact_size(ui.available_size(), Sense::hover());
         let Some(graph) = self
             .editor
             .selected_object()
