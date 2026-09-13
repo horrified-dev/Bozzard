@@ -220,3 +220,39 @@ fn exported_executable_finds_its_game_with_no_arguments_or_build_tools() {
     );
     assert!(!empty.join("must-not-exist.json").exists());
 }
+
+#[test]
+fn exported_flap_woods_completes_the_game_loop_from_a_renamed_folder() {
+    let dir = Temp::new();
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../examples/demo/flap-woods.bozzard.json");
+    let folder = dir.0.join("export");
+    let output = Command::new(env!("CARGO_BIN_EXE_bozzard-player"))
+        .arg("--export-project")
+        .arg(fixture)
+        .arg("--export-dir")
+        .arg(&folder)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let renamed = dir.0.join("Flap Woods moved elsewhere");
+    std::fs::rename(folder, &renamed).unwrap();
+    let binary = renamed.join(if cfg!(target_os = "macos") {
+        "Game.app/Contents/MacOS/Game"
+    } else if cfg!(windows) {
+        "Game.exe"
+    } else {
+        "Game"
+    });
+    let empty = dir.0.join("empty");
+    std::fs::create_dir(&empty).unwrap();
+    let output = Command::new(&binary)
+        .arg("--verify-flap-woods")
+        .current_dir(&empty)
+        .env("PATH", &empty)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert!(String::from_utf8_lossy(&output.stdout).contains("flap_woods_ok ready=true score=1 paused=true game_over=true retry=true restart=true quit=true"));
+    assert_eq!(std::fs::read_dir(empty).unwrap().count(), 0);
+}

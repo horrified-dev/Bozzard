@@ -1,5 +1,6 @@
 use anyhow::{Context, Result, bail, ensure};
 mod assets;
+mod flap_woods;
 mod game_flow;
 mod gameplay_input;
 mod presentation;
@@ -29,6 +30,7 @@ struct Options {
     export_project: Option<PathBuf>,
     export_dir: Option<PathBuf>,
     verify_first_trail: bool,
+    verify_flap_woods: bool,
     backend: Backend,
     software: bool,
     hardware: bool,
@@ -50,6 +52,7 @@ impl Default for Options {
             export_project: None,
             export_dir: None,
             verify_first_trail: false,
+            verify_flap_woods: false,
             backend: Backend::native(),
             software: false,
             hardware: false,
@@ -88,6 +91,7 @@ fn options() -> Result<Option<Options>> {
                 )
             }
             "--verify-first-trail" => result.verify_first_trail = true,
+            "--verify-flap-woods" => result.verify_flap_woods = true,
             "--backend" => {
                 result.backend = args.next().context("--backend needs a value")?.parse()?
             }
@@ -127,7 +131,7 @@ fn options() -> Result<Option<Options>> {
             "--output" => result.output = args.next().context("--output needs a directory")?.into(),
             "--help" => {
                 println!(
-                    "--project FILE starts a user game. Exported games find their project beside the executable.\n--export-project FILE --export-dir NEW_FOLDER exports a native game using this player.\n--verify-first-trail checks the reference route without graphics; add --frames 340 to present the route."
+                    "--project FILE starts a user game. Exported games find their project beside the executable.\n--export-project FILE --export-dir NEW_FOLDER exports a native game using this player.\n--verify-flap-woods checks start, score, pause, game over, retry and quit without graphics.\n--verify-first-trail checks the reference route without graphics; add --frames 340 to present the route."
                 );
                 println!(
                     "bozzard-player [--backend metal|vulkan|dx12] [--software|--hardware] [--frames N]\nbozzard-player --smoke [--backend ...] [--software|--hardware] [--output DIRECTORY]\n--benchmark-frames N compares reference/culling/cached draws during --smoke --scene.\n--scene FILE loads JSON; --write-scene FILE saves it and exits without a GPU.\n--view 2d|3d chooses the starting view; --save-path FILE sets the F5 destination.\n1/2: 2D/3D. Space: pause. Arrows: pan camera. F5: save. R: reload source. Escape: close.\nPlayer Controller scenes: WASD move, Space jump, right-drag orbit. Progress/win in title; physical R restarts."
@@ -695,6 +699,9 @@ fn main() -> Result<()> {
         error: None,
         command_error: None,
     };
+    if player.options.verify_flap_woods {
+        return flap_woods::verify(&mut player);
+    }
     if player.options.verify_first_trail && player.options.frames.is_none() {
         for tick in 0..340 {
             project::route_tick(&mut player, tick)?;

@@ -9,8 +9,10 @@ import zipfile
 
 
 def export_game(args, root):
-    if args.verify_first_trail and not args.verify:
-        raise ValueError("--verify-first-trail requires --verify")
+    if (args.verify_first_trail or args.verify_flap_woods) and not args.verify:
+        raise ValueError("route verification requires --verify")
+    if args.verify_first_trail and args.verify_flap_woods:
+        raise ValueError("choose one game verification route")
     suffix = ".exe" if platform.system() == "Windows" else ""
     player = root / "target" / args.profile / f"bozzard-player{suffix}"
     destination = (args.export_dir or root / "dist" / f"first-game-{platform.system().lower()}-{platform.machine().lower()}").resolve()
@@ -66,6 +68,8 @@ def verify_export(archive_path, folder, args, root):
         run("--write-scene", str(cwd / "snapshot.json"))
         if args.verify_first_trail:
             run("--verify-first-trail")
+        if args.verify_flap_woods:
+            run("--verify-flap-woods")
         run("--smoke", "--output", str(root / "work/export-package-smoke"), *graphics)
         if args.window:
             run(*(["--verify-first-trail", "--frames", "340"] if args.verify_first_trail else ["--frames", "3"]), *graphics)

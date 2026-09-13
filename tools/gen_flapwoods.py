@@ -37,118 +37,69 @@ SELF = {"object": "self_object"}
 
 def bird_graph():
     g = graph(
-        "Bird / flap physics, death, respawn",
+        "Bird / flap physics and game over",
         [
             node(1, "update", (0, 0)),
-            # mirror transform onto the solid proxy so sensors can see the bird
-            node(2, "position", (0, 640), [{"object": "self_object"}]),
-            node(3, "set_position", (250, 640), ["exec", {"vector": [0, 0, 0]}, {"object": {"id": "bird-solid"}}]),
-            # alive branch: integrate flap physics
-            node(4, "get_variable", (-250, 150), variable="alive"),
-            node(5, "greater", (0, 150), [{"number": 0}, {"number": 0.5}]),
-            node(6, "branch", (250, -100), ["exec", {"bool": False}]),
-            node(7, "get_variable", (-250, 400), variable="vy"),
-            node(8, "delta_time", (-250, 550)),
-            node(9, "multiply", (0, 550), [{"number": 0}, {"number": -22}]),
-            node(10, "add", (250, 400), [{"number": 0}, {"number": 0}]),
-            node(11, "set_variable", (500, 400), ["exec", {"number": 0}], variable="vy"),
-            node(12, "multiply", (750, 550), [{"number": 0}, {"number": 0}]),
-            node(13, "make_vector", (1000, 550), [{"number": 0}, {"number": 0}, {"number": 0}]),
-            node(14, "translate", (1000, 400), ["exec", {"vector": [0, 0, 0]}, SELF]),
-            node(15, "multiply", (1250, 550), [{"number": 0}, {"number": 4}]),
-            node(16, "make_vector", (1500, 550), [{"number": 0}, {"number": 0}, {"number": 0}]),
-            node(17, "set_rotation", (1500, 400), ["exec", {"vector": [0, 0, 0]}, SELF]),
-            # dead chain: sink, then respawn after one second
-            node(18, "get_variable", (-250, -300), variable="alive"),
-            node(19, "less", (0, -300), [{"number": 0}, {"number": 0.5}]),
-            node(20, "branch", (250, -450), ["exec", {"bool": False}]),
-            node(21, "get_variable", (0, -700), variable="dead_t"),
-            node(22, "add", (250, -700), [{"number": 0}, {"number": 0}]),
-            node(23, "set_variable", (500, -700), ["exec", {"number": 0}], variable="dead_t"),
-            node(24, "multiply", (500, -850), [{"number": 0}, {"number": -20}]),
-            node(25, "make_vector", (750, -850), [{"number": 0}, {"number": 0}, {"number": 0}]),
-            node(26, "translate", (750, -850), ["exec", {"vector": [0, 0, 0]}, SELF]),
-            node(27, "greater", (1000, -700), [{"number": 0}, {"number": 1}]),
-            node(28, "branch", (1250, -850), ["exec", {"bool": False}]),
-            node(29, "set_variable", (1500, -1150), ["exec", {"number": 1}], variable="alive"),
-            node(30, "set_variable", (1750, -1150), ["exec", {"number": 0}], variable="vy"),
-            node(31, "set_variable", (2000, -1150), ["exec", {"number": 0}], variable="dead_t"),
-            node(32, "set_color", (1500, -950), ["exec", {"vector": [1, 0.8, 0.25]}, SELF]),
-            node(33, "set_position", (1750, -950), ["exec", {"vector": [-5, 0.65, 0]}, SELF]),
-            node(34, "set_rotation", (2000, -950), ["exec", {"vector": [0, 0, 0]}, SELF]),
-            node(35, "set_position", (2250, -950), ["exec", {"vector": [-5, 0.65, 0]}, {"object": {"id": "bird-solid"}}]),
-            # death by touch: pipes or the floor enter the bird's trigger
-            # (the invisible solid proxy also overlaps it every tick — filter it out)
-            node(36, "body_enter", (0, -1300)),
-            node(44, "object_equal", (0, -1480), [{"object": "none"}, {"object": {"id": "bird-solid"}}]),
-            node(45, "not", (250, -1480), [{"bool": False}]),
-            node(46, "branch", (0, -1150), ["exec", {"bool": False}]),
-            node(37, "set_variable", (250, -1300), ["exec", {"number": 0}], variable="alive"),
-            node(38, "set_color", (500, -1300), ["exec", {"vector": [0.45, 0.05, 0.03]}, SELF]),
-            # flap: Space
-            node(40, "input_pressed", (0, -1600), key="jump"),
-            node(41, "branch", (250, -1600), ["exec", {"bool": False}]),
-            node(42, "set_variable", (500, -1600), ["exec", {"number": 6.5}], variable="vy"),
+            node(2, "get_variable", (0, 180), variable="vy"),
+            node(3, "delta_time", (0, 360)),
+            node(4, "multiply", (250, 360), [{"number": 0}, {"number": -22}]),
+            node(5, "add", (500, 180), [{"number": 0}, {"number": 0}]),
+            node(6, "set_variable", (750, 0), ["exec", {"number": 0}], variable="vy"),
+            node(7, "multiply", (750, 180), [{"number": 0}, {"number": 0}]),
+            node(8, "make_vector", (1000, 180), [{"number": 0}, {"number": 0}, {"number": 0}]),
+            node(9, "translate", (1250, 0), ["exec", {"vector": [0, 0, 0]}, SELF]),
+            node(10, "multiply", (1250, 180), [{"number": 0}, {"number": 4}]),
+            node(11, "make_vector", (1500, 180), [{"number": 0}, {"number": 0}, {"number": 0}]),
+            node(12, "set_rotation", (1750, 0), ["exec", {"vector": [0, 0, 0]}, SELF]),
+            node(13, "position", (1750, 180), [SELF]),
+            node(14, "set_position", (2000, 0), ["exec", {"vector": [0, 0, 0]}, {"object": {"id": "bird-solid"}}]),
+            node(15, "input_pressed", (0, -240), key="jump"),
+            node(16, "set_variable", (250, -240), ["exec", {"number": 6.5}], variable="vy"),
+            # The bird sensor always overlaps its own solid proxy; only other bodies kill it.
+            node(17, "body_enter", (0, -540)),
+            node(18, "object_equal", (0, -720), [{"object": "none"}, {"object": {"id": "bird-solid"}}]),
+            node(19, "not", (250, -720), [{"bool": False}]),
+            node(20, "branch", (500, -540), ["exec", {"bool": False}]),
+            node(21, "set_color", (750, -540), ["exec", {"vector": [0.45, 0.05, 0.03]}, SELF]),
+            node(22, "end_game", (1000, -540), ["exec", {"text": "Try again! Space to flap through the gaps."}]),
         ],
         [
-            wire(1, 0, 6, 0), wire(1, 0, 20, 0), wire(1, 0, 3, 0),
-            wire(2, 0, 3, 1),
-            wire(18, 0, 19, 0), wire(19, 0, 20, 1),
-            wire(4, 0, 5, 0), wire(5, 0, 6, 1),
-            wire(7, 0, 10, 0), wire(8, 0, 9, 0), wire(9, 0, 10, 1), wire(10, 0, 11, 1),
-            wire(6, 0, 11, 0),
-            wire(7, 0, 12, 0), wire(8, 0, 12, 1), wire(12, 0, 13, 1), wire(11, 0, 14, 0),
-            wire(13, 0, 14, 1),
-            wire(7, 0, 15, 0), wire(15, 0, 16, 1), wire(14, 0, 17, 0), wire(16, 0, 17, 1),
-            wire(21, 0, 22, 0), wire(8, 0, 22, 1), wire(22, 0, 23, 1),
-            wire(20, 0, 23, 0),
-            wire(8, 0, 24, 0), wire(24, 0, 25, 1), wire(23, 0, 26, 0), wire(25, 0, 26, 1),
-            wire(26, 0, 28, 0),
-            wire(21, 0, 27, 0), wire(27, 0, 28, 1),
-            wire(28, 0, 29, 0), wire(29, 0, 30, 0), wire(30, 0, 31, 0),
-            wire(31, 0, 32, 0), wire(32, 0, 33, 0), wire(33, 0, 34, 0), wire(34, 0, 35, 0),
-            wire(36, 1, 44, 0), wire(44, 0, 45, 0), wire(45, 0, 46, 1),
-            wire(36, 0, 46, 0), wire(46, 0, 37, 0), wire(37, 0, 38, 0),
-            wire(40, 0, 41, 0), wire(5, 0, 41, 1), wire(41, 0, 42, 0),
+            wire(1, 0, 6, 0), wire(2, 0, 5, 0), wire(3, 0, 4, 0), wire(4, 0, 5, 1), wire(5, 0, 6, 1),
+            wire(2, 0, 7, 0), wire(3, 0, 7, 1), wire(7, 0, 8, 1), wire(8, 0, 9, 1), wire(6, 0, 9, 0),
+            wire(2, 0, 10, 0), wire(10, 0, 11, 2), wire(11, 0, 12, 1), wire(9, 0, 12, 0),
+            wire(12, 0, 14, 0), wire(13, 0, 14, 1), wire(15, 0, 16, 0),
+            wire(17, 1, 18, 0), wire(18, 0, 19, 0), wire(19, 0, 20, 1),
+            wire(17, 0, 20, 0), wire(20, 0, 21, 0), wire(21, 0, 22, 0),
         ],
-        {"vy": 0, "alive": 1, "dead_t": 0},
+        {"vy": 0},
     )
-    # flap branch condition reuses node 5's alive check
     return [{"enabled": True, "graph": g}]
 
 
 def scoreline_graph():
+    # Count only the bottom half of each pair, after its trailing edge clears the bird.
+    # Explicit references exclude the floor, ceiling and bird proxy from scoring.
     g = graph(
-        "Score line / count gates, reset on death",
+        "Score / one point per cleared pipe pair",
         [
             node(1, "body_enter", (0, 0)),
-            node(2, "object_equal", (0, 180), [{"object": "none"}, {"object": {"id": "bird-solid"}}]),
-            node(3, "not", (250, 180), [{"bool": False}]),
-            node(4, "branch", (500, 0), ["exec", {"bool": False}]),
-            node(5, "get_variable", (500, 220), variable="score"),
-            node(6, "add", (750, 220), [{"number": 0}, {"number": 1}]),
-            node(7, "set_variable", (1000, 0), ["exec", {"number": 0}], variable="score"),
-            node(8, "divide", (1250, 0), [{"number": 0}, {"number": 2}]),
-            node(9, "multiply", (1500, 0), [{"number": 0}, {"number": 3}]),
-            node(10, "set_light_intensity", (1750, 0), ["exec", {"number": 0}, {"object": {"id": "beacon"}}]),
-            node(11, "add", (1250, 220), [{"number": 0}, {"number": -4.6}]),
-            node(12, "make_vector", (1500, 220), [{"number": 0}, {"number": 5.0}, {"number": 0}]),
-            node(13, "set_position", (2000, 220), ["exec", {"vector": [0, 0, 0]}, {"object": {"id": "score-cube"}}]),
-            node(14, "body_exit", (0, 450)),
-            node(15, "object_equal", (0, 630), [{"object": "none"}, {"object": {"id": "bird-solid"}}]),
-            node(16, "branch", (500, 450), ["exec", {"bool": False}]),
-            node(17, "set_variable", (750, 450), ["exec", {"number": 0}], variable="score"),
-            node(18, "set_light_intensity", (1000, 450), ["exec", {"number": 0}, {"object": {"id": "beacon"}}]),
-            node(19, "set_position", (1250, 450), ["exec", {"vector": [-4.6, 5.0, 0]}, {"object": {"id": "score-cube"}}]),
+            *[node(2 + i, "object_equal", (0, 180 + i * 180),
+                   [{"object": "none"}, {"object": {"id": f"pipe-{i + 1}-bottom"}}]) for i in range(3)],
+            node(5, "or", (250, 180), [{"bool": False}, {"bool": False}]),
+            node(6, "or", (500, 180), [{"bool": False}, {"bool": False}]),
+            node(7, "branch", (750, 0), ["exec", {"bool": False}]),
+            node(8, "get_variable", (750, 180), variable="score"),
+            node(9, "add", (1000, 180), [{"number": 0}, {"number": 1}]),
+            node(10, "set_variable", (1250, 0), ["exec", {"number": 0}], variable="score"),
+            node(11, "number_to_text", (1250, 180), [{"number": 0}, {"number": 0}]),
+            node(12, "join_text", (1500, 180), [{"text": "Score: "}, {"text": ""}]),
+            node(13, "set_text", (1750, 0), ["exec", {"text": ""}, {"object": {"id": "score"}}]),
         ],
-        [
-            wire(1, 0, 4, 0), wire(1, 1, 2, 0), wire(2, 0, 3, 0), wire(3, 0, 4, 1),
-            wire(5, 0, 6, 0), wire(6, 0, 7, 1), wire(4, 0, 7, 0),
-            wire(5, 0, 8, 0), wire(8, 0, 9, 0), wire(9, 0, 10, 1), wire(4, 0, 10, 0),
-            wire(10, 0, 13, 0),
-            wire(8, 0, 11, 0), wire(11, 0, 12, 0), wire(12, 0, 13, 1),
-            wire(14, 0, 16, 0), wire(14, 1, 15, 0), wire(15, 0, 16, 1),
-            wire(16, 0, 17, 0), wire(17, 0, 18, 0), wire(18, 0, 19, 0),
+        [wire(1, 1, i, 0) for i in (2, 3, 4)] + [
+            wire(2, 0, 5, 0), wire(3, 0, 5, 1), wire(5, 0, 6, 0), wire(4, 0, 6, 1),
+            wire(1, 0, 7, 0), wire(6, 0, 7, 1), wire(7, 0, 10, 0),
+            wire(8, 0, 9, 0), wire(9, 0, 10, 1), wire(8, 0, 11, 0),
+            wire(11, 0, 12, 1), wire(12, 0, 13, 1), wire(10, 0, 13, 0),
         ],
         {"score": 0},
     )
@@ -239,37 +190,39 @@ for i, (x0, idx0, gap0) in enumerate([(2, 0, 0), (11, 1, 1.9), (20, 2, -1.9)], s
         collider={"center": [0, 0, 0], "size": [1, 1, 1], "enabled": True})
 
 # invisible solid floor that kills the bird via its trigger
-add(id="floor", name="Bramble floor (solid)", transform=tf((0, -7.5, 0), s=(40, 1, 2)),
+add(id="floor", name="Bramble floor (solid)", transform=tf((0, -5.5, 0), s=(40, 1, 2)),
     collider={"center": [0, 0, 0], "size": [1, 1, 1], "enabled": True})
-add(id="ground-visual", name="Bramble ground", transform=tf((0, -7.4, -1.2), s=(40, 1.2, 1)),
+add(id="ground-visual", name="Bramble ground", transform=tf((0, -5.4, -1.2), s=(40, 1.2, 1)),
     drawable=drawable([0.06, 0.11, 0.05]))
 
-# score line sensor, beacon light, score cube
-add(id="score-line", name="Score line", transform=tf((-5, 0, 0)),
-    trigger={"volume": {"center": [0, 0, 0], "size": [1.2, 16, 2], "enabled": True},
+# A ceiling prevents escaping the game by flying above every obstacle.
+add(id="ceiling", name="Canopy ceiling (solid)", transform=tf((0, 5.9, 0), s=(40, 1, 2)),
+    collider={"center": [0, 0, 0], "size": [1, 1, 1], "enabled": True})
+
+# Score sensor sits behind the bird; one bottom collider represents each cleared pair.
+add(id="score-line", name="Cleared pipe sensor", transform=tf((-7, 0, 0)),
+    trigger={"volume": {"center": [0, 0, 0], "size": [0.1, 40, 2], "enabled": True},
              "action": {"kind": "sensor"}},
     blueprints=scoreline_graph())
-add(id="beacon", name="Score beacon", transform=tf((0, 4.6, 0.8)),
-    light={"kind": "point", "color": [1, 0.75, 0.3], "intensity": 0,
-           "range": 10, "inner_angle_degrees": 16, "outer_angle_degrees": 30, "shadows": False})
-add(id="score-cube", name="Score marker", transform=tf((-4.6, 5.0, 0), s=(0.4, 0.4, 0.4)),
-    drawable=drawable([1, 0.8, 0.25]))
+add(id="score", name="HUD / score", transform=tf(),
+    text_rendering={"text": "Score: 0", "font_size": 28, "layer": "3d",
+                    "screen": {"anchor": [0, 0], "offset": [24, 24]},
+                    "color": [1, 0.9, 0.6, 1]})
 
 # backdrop trees behind the pipes
 for i, (x, h) in enumerate([(-9, 3), (-6.5, 4.5), (-3, 2.5), (0.5, 5), (3.5, 3.5), (7, 4.5), (10, 3)]):
     add(id=f"bg-tree-{i}", name="Backdrop tree", transform=tf((x, h / 2 - 7, -3), (0, i * 40, 0), (0.7, h, 0.7)),
         drawable=drawable([0.04, 0.07, 0.035]))
 
-add(id="title", name="Title", transform=tf((0, 5.25, -0.5)),
-    text_rendering={"text": "FLAPWOODS", "font_size": 0.55, "layer": "3d",
-                    "color": [0.95, 0.85, 0.6, 1]})
-add(id="hint", name="Hint", transform=tf((0, -5.1, -0.5)),
-    text_rendering={"text": "Space to flap — slip between the thorn pipes",
-                    "font_size": 0.35, "layer": "3d", "color": [0.9, 0.9, 0.9, 1]})
+add(id="hint", name="HUD / controls", transform=tf(),
+    text_rendering={"text": "Space to flap  ·  Escape to pause", "alignment": "center",
+                    "screen": {"anchor": [0.5, 1], "offset": [0, -38]},
+                    "font_size": 18, "layer": "3d", "color": [1, 1, 1, 1]})
 
 scene = {
     "version": 1,
-    "name": "Flapwoods",
+    "name": "Flap Woods",
+    "game_flow": {"title": "FLAP WOODS", "instructions": "Space to flap through the thorn pipes.\nEach cleared pair earns one point."},
     "views": {"3d": "camera"},
     "environment": {"zenith": [0.1, 0.12, 0.28], "horizon": [0.62, 0.36, 0.2],
                     "ground": [0.05, 0.06, 0.05], "intensity": 0.5, "background": True},

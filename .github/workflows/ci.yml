@@ -84,6 +84,16 @@ jobs:
           else
             python3 tools/package.py --project examples/demo/first-trail.bozzard.json --export-dir dist/first-trail --verify --verify-first-trail --backend "$BACKEND" $SOFTWARE
           fi
+      - name: Export Flap Woods and verify its complete game loop
+        env:
+          BACKEND: ${{ matrix.backend }}
+          SOFTWARE: ${{ matrix.software }}
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            xvfb-run -a python3 tools/package.py --project examples/demo/flap-woods.bozzard.json --export-dir dist/flap-woods --verify --verify-flap-woods --window --backend "$BACKEND" $SOFTWARE
+          else
+            python3 tools/package.py --project examples/demo/flap-woods.bozzard.json --export-dir dist/flap-woods --verify --verify-flap-woods --backend "$BACKEND" $SOFTWARE
+          fi
       - name: Upload pixel diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
