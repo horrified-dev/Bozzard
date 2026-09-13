@@ -21,7 +21,7 @@ No Mesh Renderer or Material is required. Text and mesh components can coexist i
 - Text is flat geometry in the entity's **local XY plane**, facing +Z. Rows advance toward -Y. It inherits parent transforms, including rotated/nonuniform/mirrored transforms.
 - The origin anchors the **top** of the block. Left, center and right alignment place the corresponding horizontal edge/center at the origin, and align multiline rows accordingly.
 - Font size is an **em size in local units**, not pixels. Wrapping width is also in local units; `null` disables wrapping. Explicit newlines always create rows.
-- **3D** uses the perspective scene camera; **2D** uses the existing orthographic scene layer. This is not a screen-space canvas/HUD or automatic camera-facing billboard. Text can be parented to a camera, but there is no pixel-anchor/layout system.
+- **3D** uses the perspective scene camera; **2D** uses the existing orthographic scene layer. Enable **Screen HUD** for screen-anchored text instead. HUD text draws over the finished image, unaffected by world depth, camera motion, fog or post-processing.
 - Text is unlit and alpha-blended, depth-tested against geometry, and does not write depth or cast shadows. It participates in the existing 3D fog/display processing. Transparent objects use the renderer's existing block-center sorting, not per-glyph order-independent transparency.
 - Color is linear RGB with straight alpha. Text's Enabled flag and layer are independent of any mesh on the entity.
 
@@ -29,7 +29,7 @@ No Mesh Renderer or Material is required. Text and mesh components can coexist i
 
 `TextRendering` is a normal, optional ECS component. Scene/prefab JSON preserves its settings; prefab instances have independent component values. Capture reads live text, while editor Stop discards Play changes and restores authored values. Destroyed/removed text releases its cached geometry; the atlas is released when a rendered view contains no text.
 
-Existing Blueprint Transform actions affect text. **Set Visible** hides both text and mesh on the target, not descendants. **Set Color** updates text RGB while preserving opacity, and also updates a mesh/Material if attached. This pass does not add string ports or a Set Text Blueprint node; runtime Rust code can change the component's `text` field.
+Existing Blueprint Transform actions affect text. **Set Visible** hides both text and mesh on the target, not descendants. **Set Color** updates text RGB while preserving opacity, and also updates a mesh/Material if attached. **Text**, **Number to Text**, **Join Text**, **Get Text**, and **Set Text** nodes support dynamic labels. Number to Text takes a decimal count from 0 to 6; text values and computed results are bounded to 4096 UTF-8 bytes. Invalid output reports a simulation error without replacing the target label. Variables remain numeric.
 
 ```json
 "text_rendering": {
@@ -65,3 +65,17 @@ python3 tools/check_headless.py
 ```
 
 The hardware regression checks visible pixels, opaque occlusion, opacity, atlas-growth stability, repeated edits, bounded GPU resources and cleanup. Editor tests cover component workflow, parented bounds/picking, layers, validation, serialization, history, prefab isolation, Blueprint visibility/color and Play restoration.
+
+## Screen HUD
+
+Open `examples/demo/scenes/hud-lab.json`, press Play, focus the viewport, and press Space to increment the counter. Resize the viewport: the counter stays top-left, the heading top-right, and the instructions bottom-center.
+
+In Text Rendering, enable **Screen HUD** and set Anchor X/Y (0 to 1) and Offset X/Y. `(0,0)` is top-left; `(1,1)` is bottom-right. Offsets, font size, and wrap width use logical pixels, scaled for the editor/player display. Positive Y offsets move down. Horizontal text alignment defines which edge is attached; the top of the text block is the vertical origin. For bottom alignment, use a negative Y offset large enough for the text. Entity and parent transforms are ignored for HUD placement.
+
+HUD belongs to its chosen 2D/3D view. It is selectable in the viewport or hierarchy; edit its anchors in the Inspector. World gizmos and world bounds do not move/include HUD labels. Overlapping HUD text draws in object-ID order, with later IDs on top. This foundation provides text labels, not interactive buttons, automatic panels, or rich text.
+
+```json
+"screen": { "anchor": [1, 0], "offset": [-24, 24] }
+```
+
+The optional `screen` field lives inside `text_rendering`. Omitting it preserves existing world text. HUD settings and Blueprint text literals survive scenes, prefabs, and game exports; Play-time text resets when Play stops or the game reloads.

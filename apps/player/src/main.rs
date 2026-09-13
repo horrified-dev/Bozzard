@@ -1,7 +1,10 @@
 use anyhow::{Context, Result, bail, ensure};
 mod assets;
+mod flap_woods;
+mod game_flow;
 mod gameplay_input;
 mod presentation;
+mod project;
 mod smoke;
 use bozzard_demo::{SceneDemo, load_document, save_document_from};
 use bozzard_render::{Backend, Gpu, SceneRenderer, instance, wgpu};
@@ -22,6 +25,12 @@ use winit::{
 };
 
 struct Options {
+    project: Option<PathBuf>,
+    game_name: Option<String>,
+    export_project: Option<PathBuf>,
+    export_dir: Option<PathBuf>,
+    verify_first_trail: bool,
+    verify_flap_woods: bool,
     backend: Backend,
     software: bool,
     hardware: bool,
@@ -38,6 +47,12 @@ struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
+            project: None,
+            game_name: None,
+            export_project: None,
+            export_dir: None,
+            verify_first_trail: false,
+            verify_flap_woods: false,
             backend: Backend::native(),
             software: false,
             hardware: false,
@@ -58,6 +73,25 @@ fn options() -> Result<Option<Options>> {
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--project" => {
+                result.project = Some(args.next().context("--project needs a manifest")?.into())
+            }
+            "--export-project" => {
+                result.export_project = Some(
+                    args.next()
+                        .context("--export-project needs a manifest")?
+                        .into(),
+                )
+            }
+            "--export-dir" => {
+                result.export_dir = Some(
+                    args.next()
+                        .context("--export-dir needs a new folder")?
+                        .into(),
+                )
+            }
+            "--verify-first-trail" => result.verify_first_trail = true,
+            "--verify-flap-woods" => result.verify_flap_woods = true,
             "--backend" => {
                 result.backend = args.next().context("--backend needs a value")?.parse()?
             }
@@ -97,6 +131,9 @@ fn options() -> Result<Option<Options>> {
             "--output" => result.output = args.next().context("--output needs a directory")?.into(),
             "--help" => {
                 println!(
+                    "--project FILE starts a user game. Exported games find their project beside the executable.\n--export-project FILE --export-dir NEW_FOLDER exports a native game using this player.\n--verify-flap-woods checks start, score, pause, game over, retry and quit without graphics.\n--verify-first-trail checks the reference route without graphics; add --frames 340 to present the route."
+                );
+                println!(
                     "bozzard-player [--backend metal|vulkan|dx12] [--software|--hardware] [--frames N]\nbozzard-player --smoke [--backend ...] [--software|--hardware] [--output DIRECTORY]\n--benchmark-frames N compares reference/culling/cached draws during --smoke --scene.\n--scene FILE loads JSON; --write-scene FILE saves it and exits without a GPU.\n--view 2d|3d chooses the starting view; --save-path FILE sets the F5 destination.\n1/2: 2D/3D. Space: pause. Arrows: pan camera. F5: save. R: reload source. Escape: close.\nPlayer Controller scenes: WASD move, Space jump, right-drag orbit. Progress/win in title; physical R restarts."
                 );
                 return Ok(None);
@@ -120,6 +157,7 @@ fn options() -> Result<Option<Options>> {
         result.benchmark_frames.is_none() || (result.smoke && result.scene.is_some()),
         "--benchmark-frames requires --smoke --scene FILE"
     );
+    project::resolve(&mut result)?;
     Ok(Some(result))
 }
 
@@ -190,6 +228,8 @@ impl View {
             self.surface_status = "window has zero size";
             return Ok(false);
         }
+        self.renderer
+            .set_hud_scale(self.window.scale_factor() as f32);
         assets.poll(&self.gpu, &mut self.renderer)?;
         let (frame, reconfigure) = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(frame) => (frame, false),
@@ -216,6 +256,19 @@ impl View {
             layer,
             self.config.width as f32 / self.config.height as f32,
         )?;
+        if let (Some(settings), Some(session)) =
+            (&demo.instance().document().game_flow, demo.game_session())
+        {
+            let scale = self.window.scale_factor() as f32;
+            scene.items.extend(bozzard_render_assets::game_menu(
+                settings,
+                session,
+                [
+                    self.config.width as f32 / scale,
+                    self.config.height as f32 / scale,
+                ],
+            ));
+        }
         if !assets.current() {
             scene.gi = None;
         }
@@ -241,6 +294,7 @@ struct Player {
     demo: SceneDemo,
     assets: assets::Assets,
     paused: bool,
+    menu_input: game_flow::MenuInput,
     gameplay_controls: gameplay_input::GameplayControls,
     last_frame: Instant,
     last_present: Instant,
@@ -251,14 +305,18 @@ struct Player {
 
 impl Player {
     fn window_title(&self) -> String {
+        let name = self.options.game_name.as_deref().unwrap_or("Bozzard");
         let status = if let Some(error) = &self.command_error {
             format!("ERROR: {error} | ")
         } else {
             String::new()
         };
+        if let Some(session) = self.demo.game_session() {
+            return format!("{name} | {status}{:?}", session.phase);
+        }
         if let Some(state) = self.demo.gameplay() {
             format!(
-                "Bozzard | {status}{} {}/{} | CP: {} | falls: {} | WASD move, Space jump, RMB orbit, physical R restart",
+                "{name} | {status}{} {}/{} | CP: {} | falls: {} | WASD move, Space jump, RMB orbit, physical R restart",
                 if state.won {
                     "YOU WIN!"
                 } else {
@@ -269,9 +327,11 @@ impl Player {
                 state.checkpoint.as_deref().unwrap_or("start"),
                 state.respawns
             )
+        } else if self.options.game_name.is_some() {
+            format!("{name} | {status}Playing | R: restart | Escape: quit")
         } else if self.demo.instance().has_blueprints() {
             format!(
-                "Bozzard | {status}Blueprints running | WASD / Space: input | R: restart | F5: save"
+                "{name} | {status}Blueprints running | WASD / Space: input | R: restart | F5: save"
             )
         } else {
             let layer = if self.options.layer == Layer::TwoD {
@@ -281,7 +341,7 @@ impl Player {
             };
             let state = if self.paused { "paused" } else { "playing" };
             format!(
-                "Bozzard — {status}{layer} / {state} | 1/2: view | Space: pause | Arrows: pan | F5: save | R: reload"
+                "{name} — {status}{layer} / {state} | 1/2: view | Space: pause | Arrows: pan | F5: save | R: reload"
             )
         }
     }
@@ -295,6 +355,9 @@ impl Player {
         repeat: bool,
         synthetic: bool,
     ) -> Result<()> {
+        if self.game_key(physical, state, repeat, synthetic)? {
+            return Ok(());
+        }
         if self.demo.accepts_gameplay_input() {
             if !synthetic && let PhysicalKey::Code(code) = physical {
                 let input =
@@ -346,6 +409,12 @@ impl Player {
     }
 
     fn execute_key(&mut self, key: &Key, repeat: bool) -> Result<bool> {
+        if self.options.game_name.is_some()
+            && (matches!(key, Key::Named(NamedKey::F5))
+                || matches!(key, Key::Character(value) if value == "1" || value == "2"))
+        {
+            return Ok(false);
+        }
         match key {
             Key::Named(NamedKey::Space) if !repeat && !self.demo.accepts_gameplay_input() => {
                 self.paused = !self.paused
@@ -462,6 +531,10 @@ impl ApplicationHandler for Player {
         if self.view.as_ref().is_none_or(|v| id != v.window.id()) {
             return;
         }
+        if let Err(error) = self.game_pointer_event(&event) {
+            self.fail(event_loop, error);
+            return;
+        }
         if self.demo.accepts_gameplay_input() {
             if let Some(input) = self.gameplay_controls.event(&event)
                 && (self.options.layer == Layer::ThreeD || self.demo.instance().has_blueprints())
@@ -486,10 +559,27 @@ impl ApplicationHandler for Player {
         {
             eprintln!("scene command failed: {error:#}");
         }
+        if self
+            .demo
+            .game_session()
+            .is_some_and(|s| s.phase == bozzard_scene::GamePhase::Quit)
+        {
+            event_loop.exit();
+            return;
+        }
         let now = Instant::now();
         if matches!(event, WindowEvent::RedrawRequested) {
-            if !self.paused {
+            if self.options.verify_first_trail {
+                if let Err(error) = project::route_tick(self, self.demo.app.ticks()) {
+                    self.fail(event_loop, error);
+                    return;
+                }
+            } else if !self.paused {
                 self.demo.app.advance(now.duration_since(self.last_frame));
+            }
+            if let Err(error) = self.demo.check_simulation() {
+                self.fail(event_loop, error);
+                return;
             }
             self.last_frame = now;
         }
@@ -501,7 +591,8 @@ impl ApplicationHandler for Player {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::KeyboardInput { event, .. }
-                if event.state == ElementState::Pressed
+                if self.demo.game_session().is_none()
+                    && event.state == ElementState::Pressed
                     && event.logical_key == Key::Named(NamedKey::Escape) =>
             {
                 event_loop.exit()
@@ -564,6 +655,21 @@ fn main() -> Result<()> {
     let Some(options) = options()? else {
         return Ok(());
     };
+    if let Some(manifest) = &options.export_project {
+        let (project, source) = bozzard_project::Project::load(manifest)?;
+        let scene = load_document(Some(&source))?;
+        let destination = bozzard_project::prepare_export(
+            &project,
+            &scene,
+            &source,
+            &std::env::current_exe()?,
+            options.export_dir.as_ref().unwrap(),
+            &Default::default(),
+        )?
+        .commit()?;
+        println!("export_ok path={}", destination.display());
+        return Ok(());
+    }
     if options.smoke {
         return smoke::run(&options);
     }
@@ -585,6 +691,7 @@ fn main() -> Result<()> {
         view: None,
         demo,
         paused: false,
+        menu_input: Default::default(),
         gameplay_controls: gameplay_input::GameplayControls::default(),
         last_frame: Instant::now(),
         last_present: Instant::now(),
@@ -592,7 +699,19 @@ fn main() -> Result<()> {
         error: None,
         command_error: None,
     };
-    EventLoop::new()?.run_app(&mut player)?;
+    if player.options.verify_flap_woods {
+        return flap_woods::verify(&mut player);
+    }
+    if player.options.verify_first_trail && player.options.frames.is_none() {
+        for tick in 0..340 {
+            project::route_tick(&mut player, tick)?;
+        }
+    } else {
+        EventLoop::new()?.run_app(&mut player)?;
+    }
+    if player.options.verify_first_trail {
+        project::verify_route(&mut player)?;
+    }
     if let Some(error) = player.error {
         return Err(error);
     }
@@ -621,6 +740,7 @@ mod controls_tests {
             view: None,
             demo: SceneDemo::new(&document).unwrap(),
             paused: false,
+            menu_input: Default::default(),
             gameplay_controls: gameplay_input::GameplayControls::default(),
             last_frame: Instant::now(),
             last_present: Instant::now(),
@@ -630,6 +750,75 @@ mod controls_tests {
         }
     }
 
+    #[test]
+    fn game_menu_keys_do_not_repeat_or_leak_into_gameplay() {
+        use bozzard_scene::{GamePhase as P, TextRendering};
+        let mut player = authored_player();
+        let scene = Scene::from_json(include_str!(
+            "../../../examples/demo/scenes/game-flow-lab.json"
+        ))
+        .unwrap();
+        player.demo = SceneDemo::new(&scene).unwrap();
+        player.gameplay_controls.event(&WindowEvent::Focused(true));
+        let key = |player: &mut Player, code, repeat, synthetic| {
+            player
+                .dispatch_keyboard(
+                    PhysicalKey::Code(code),
+                    &Key::Character("ignored".into()),
+                    ElementState::Pressed,
+                    repeat,
+                    synthetic,
+                )
+                .unwrap();
+        };
+        key(&mut player, KeyCode::Enter, true, false);
+        key(&mut player, KeyCode::Enter, false, true);
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Ready);
+        key(&mut player, KeyCode::Space, false, false);
+        key(&mut player, KeyCode::Enter, false, false);
+        player.demo.app.step();
+        let counter = player.demo.instance().entity("counter").unwrap();
+        assert_eq!(
+            player
+                .demo
+                .app
+                .world
+                .get::<TextRendering>(counter)
+                .unwrap()
+                .text,
+            "Taps: 0"
+        );
+        key(&mut player, KeyCode::Escape, false, false);
+        key(&mut player, KeyCode::Escape, true, false);
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Paused);
+        key(&mut player, KeyCode::Space, false, false);
+        key(&mut player, KeyCode::Enter, false, false);
+        player.demo.app.step();
+        assert_eq!(
+            player
+                .demo
+                .app
+                .world
+                .get::<TextRendering>(counter)
+                .unwrap()
+                .text,
+            "Taps: 0"
+        );
+        for _ in 0..3 {
+            key(&mut player, KeyCode::Space, false, false);
+            player.demo.app.step();
+        }
+        player.demo.check_simulation().unwrap();
+        assert_eq!(player.demo.game_session().unwrap().phase, P::GameOver);
+        key(&mut player, KeyCode::Enter, false, false);
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Playing);
+        player
+            .game_pointer_event(&WindowEvent::Focused(false))
+            .unwrap();
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Paused);
+        key(&mut player, KeyCode::KeyQ, false, false);
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Quit);
+    }
     #[test]
     fn blueprint_input_without_player_controller_toggles_rendered_mesh() {
         let mut player = authored_player();
@@ -895,6 +1084,7 @@ mod controls_tests {
             view: None,
             demo: SceneDemo::new(&bozzard_demo::scene_document().unwrap()).unwrap(),
             paused: false,
+            menu_input: Default::default(),
             gameplay_controls: gameplay_input::GameplayControls::default(),
             last_frame: Instant::now(),
             last_present: Instant::now(),

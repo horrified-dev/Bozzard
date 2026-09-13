@@ -2,6 +2,7 @@ use super::*;
 use bozzard_assets::{AssetStore, Handle, job::Job};
 
 pub enum Loading {
+    Export(Job<bozzard_project::PreparedExport>),
     Prefab(Job<bozzard_editor::PreparedPrefab>),
     BakeGi(Job<bozzard_editor::PreparedGi>),
     Import(Job<bozzard_editor::PreparedImport>),
@@ -16,6 +17,7 @@ impl Loading {
             Self::Import(job) => job.label(),
             Self::Open(job) => job.label(),
             Self::Save(job) => job.label(),
+            Self::Export(job) => job.label(),
         }
     }
     pub fn cancel(&self) {
@@ -25,6 +27,7 @@ impl Loading {
             Self::Import(job) => job.cancel(),
             Self::Open(job) => job.cancel(),
             Self::Save(job) => job.cancel(),
+            Self::Export(job) => job.cancel(),
         }
     }
     pub fn cancelled(&self) -> bool {
@@ -34,12 +37,54 @@ impl Loading {
             Self::Import(job) => job.cancelled(),
             Self::Open(job) => job.cancelled(),
             Self::Save(job) => job.cancelled(),
+            Self::Export(job) => job.cancelled(),
         }
     }
 }
 pub type Refresh = (u64, Job<(AssetStore, Vec<Handle>)>);
 
 impl App {
+    pub fn start_export(&mut self, destination: PathBuf, name: String) -> bool {
+        let result = (|| {
+            ensure!(
+                self.loading.is_none(),
+                "Wait for the current operation first"
+            );
+            self.editor.finish_gesture();
+            self.drag = None;
+            let scene = self.editor.scene().clone();
+            let source = self.editor.path.clone();
+            let project = bozzard_project::Project {
+                version: 1,
+                name,
+                start_scene: "scene.json".into(),
+                view: if scene.views.contains_key(&Layer::ThreeD) {
+                    Layer::ThreeD
+                } else {
+                    Layer::TwoD
+                },
+            };
+            let player = bozzard_project::companion_player(&std::env::current_exe()?)?;
+            self.loading = Some(Loading::Export(Job::start(
+                "Preparing game export",
+                move |progress| {
+                    bozzard_project::prepare_export(
+                        &project,
+                        &scene,
+                        &source,
+                        &player,
+                        &destination,
+                        &progress,
+                    )
+                },
+            )?));
+            Ok(())
+        })();
+        let started = result.is_ok();
+        self.result(result);
+        started
+    }
+
     pub fn start_prefab(&mut self, command: bozzard_editor::PrefabCommand) {
         let result = (|| {
             ensure!(
@@ -79,6 +124,15 @@ impl App {
     pub fn poll_loading(&mut self) {
         let cancelled = self.loading.as_ref().is_some_and(Loading::cancelled);
         let completion = match self.loading.as_ref() {
+            Some(Loading::Export(job)) => job.poll().map(|result| {
+                result.and_then(|prepared| {
+                    let folder = prepared.commit()?;
+                    self.status =
+                        format!("Game exported to {}. Open Game to play.", folder.display());
+                    self.dialog = Some(files::Dialog::new(files::Kind::Exported, &folder));
+                    Ok(())
+                })
+            }),
             Some(Loading::Prefab(job)) => job.poll().map(|result| {
                 result.and_then(|prepared| {
                     let label = prepared.label.clone();

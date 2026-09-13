@@ -1,9 +1,11 @@
 //! Versioned scene documents and ECS instances, with no graphics dependencies.
 //! IDs are document-local persistent strings, never runtime entity handles.
+pub mod game_flow;
+pub use game_flow::{GameAction, GameFlowSettings, GameKey, GamePhase, GameSession};
 mod gi;
 pub use gi::{BakedGi, GI_PROBE_STRIDE, GI_VISIBILITY_SIZE, GiSettings, GiVolumeSettings};
 mod text;
-pub use text::{TextAlignment, TextFont, TextRendering};
+pub use text::{ScreenText, TextAlignment, TextFont, TextRendering};
 mod surface;
 pub use surface::SurfaceMaterialOverride;
 pub mod blueprint;
@@ -351,6 +353,8 @@ pub struct Object {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Scene {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub game_flow: Option<GameFlowSettings>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub prefabs: BTreeMap<String, PrefabInstance>,
     #[serde(default)]
@@ -420,6 +424,9 @@ impl Scene {
 
     /// Iterative topological sort: arbitrary document order, no recursive stack limit.
     fn order(&self) -> Result<Vec<usize>> {
+        if let Some(flow) = &self.game_flow {
+            flow.validate()?;
+        }
         self.fog.validate()?;
         self.gi.validate()?;
         self.lighting.validate()?;
@@ -1156,6 +1163,7 @@ mod tests {
     }
     fn scene() -> Scene {
         Scene {
+            game_flow: None,
             fog: Default::default(),
             gi: Default::default(),
             environment: EnvironmentSettings::default(),

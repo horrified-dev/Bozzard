@@ -1,0 +1,421 @@
+{
+  "version": 1,
+  "name": "HUD Lab",
+  "views": {
+    "3d": "camera"
+  },
+  "objects": [
+    {
+      "id": "camera",
+      "name": "Camera",
+      "transform": {
+        "translation": [
+          0,
+          0,
+          6
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "camera": {
+        "projection": "perspective",
+        "vertical_fov_degrees": 50,
+        "near": 0.1,
+        "far": 100
+      }
+    },
+    {
+      "id": "cube",
+      "name": "World cube",
+      "spin": [
+        8,
+        25,
+        0
+      ],
+      "drawable": {
+        "layer": "3d",
+        "mesh": "cube",
+        "texture": "checker",
+        "color": [
+          1,
+          1,
+          1
+        ],
+        "uv_scale": [
+          1,
+          1
+        ]
+      },
+      "transform": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "counter",
+      "name": "HUD / tap counter",
+      "text_rendering": {
+        "text": "Taps: 0",
+        "font_size": 28,
+        "screen": {
+          "anchor": [
+            0,
+            0
+          ],
+          "offset": [
+            24,
+            24
+          ]
+        }
+      },
+      "blueprints": [
+        {
+          "enabled": true,
+          "graph": {
+            "version": 1,
+            "name": "HUD / tap counter",
+            "variables": {
+              "taps": 0
+            },
+            "nodes": [
+              {
+                "id": 1,
+                "kind": "start",
+                "position": [
+                  280,
+                  0
+                ],
+                "inputs": []
+              },
+              {
+                "id": 2,
+                "kind": "input_pressed",
+                "position": [
+                  560,
+                  0
+                ],
+                "inputs": [],
+                "key": "jump"
+              },
+              {
+                "id": 3,
+                "kind": "get_variable",
+                "position": [
+                  840,
+                  0
+                ],
+                "inputs": [],
+                "variable": "taps"
+              },
+              {
+                "id": 4,
+                "kind": "add",
+                "position": [
+                  0,
+                  180
+                ],
+                "inputs": [
+                  {
+                    "number": 0
+                  },
+                  {
+                    "number": 1
+                  }
+                ]
+              },
+              {
+                "id": 5,
+                "kind": "set_variable",
+                "position": [
+                  280,
+                  180
+                ],
+                "inputs": [
+                  "exec",
+                  {
+                    "number": 0
+                  }
+                ],
+                "variable": "taps"
+              },
+              {
+                "id": 6,
+                "kind": "number_to_text",
+                "position": [
+                  560,
+                  180
+                ],
+                "inputs": [
+                  {
+                    "number": 0
+                  },
+                  {
+                    "number": 0
+                  }
+                ]
+              },
+              {
+                "id": 7,
+                "kind": "join_text",
+                "position": [
+                  840,
+                  180
+                ],
+                "inputs": [
+                  {
+                    "text": "Taps: "
+                  },
+                  {
+                    "text": ""
+                  }
+                ]
+              },
+              {
+                "id": 8,
+                "kind": "set_text",
+                "position": [
+                  0,
+                  360
+                ],
+                "inputs": [
+                  "exec",
+                  {
+                    "text": ""
+                  },
+                  {
+                    "object": "self_object"
+                  }
+                ]
+              },
+              {
+                "id": 9,
+                "kind": "set_text",
+                "position": [
+                  1400,
+                  0
+                ],
+                "inputs": [
+                  "exec",
+                  {
+                    "text": ""
+                  },
+                  {
+                    "object": "self_object"
+                  }
+                ]
+              }
+            ],
+            "wires": [
+              {
+                "from": {
+                  "node": 2,
+                  "port": 0
+                },
+                "to": {
+                  "node": 5,
+                  "port": 0
+                }
+              },
+              {
+                "from": {
+                  "node": 3,
+                  "port": 0
+                },
+                "to": {
+                  "node": 4,
+                  "port": 0
+                }
+              },
+              {
+                "from": {
+                  "node": 4,
+                  "port": 0
+                },
+                "to": {
+                  "node": 5,
+                  "port": 1
+                }
+              },
+              {
+                "from": {
+                  "node": 3,
+                  "port": 0
+                },
+                "to": {
+                  "node": 6,
+                  "port": 0
+                }
+              },
+              {
+                "from": {
+                  "node": 6,
+                  "port": 0
+                },
+                "to": {
+                  "node": 7,
+                  "port": 1
+                }
+              },
+              {
+                "from": {
+                  "node": 7,
+                  "port": 0
+                },
+                "to": {
+                  "node": 8,
+                  "port": 1
+                }
+              },
+              {
+                "from": {
+                  "node": 1,
+                  "port": 0
+                },
+                "to": {
+                  "node": 9,
+                  "port": 0
+                }
+              },
+              {
+                "from": {
+                  "node": 5,
+                  "port": 0
+                },
+                "to": {
+                  "node": 8,
+                  "port": 0
+                }
+              },
+              {
+                "from": {
+                  "node": 7,
+                  "port": 0
+                },
+                "to": {
+                  "node": 9,
+                  "port": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "transform": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "heading",
+      "name": "HUD / heading",
+      "text_rendering": {
+        "text": "HUD LAB",
+        "font_size": 24,
+        "alignment": "right",
+        "screen": {
+          "anchor": [
+            1,
+            0
+          ],
+          "offset": [
+            -24,
+            24
+          ]
+        },
+        "color": [
+          0.3,
+          0.9,
+          0.75,
+          1
+        ]
+      },
+      "transform": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "instructions",
+      "name": "HUD / instructions",
+      "text_rendering": {
+        "text": "Space to count  /  Resize the window to check anchors",
+        "font_size": 18,
+        "alignment": "center",
+        "screen": {
+          "anchor": [
+            0.5,
+            1
+          ],
+          "offset": [
+            0,
+            -56
+          ]
+        }
+      },
+      "transform": {
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    }
+  ]
+}

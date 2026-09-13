@@ -213,6 +213,11 @@ Foundation CI passed on all three hosted platforms at [`d319721`](https://github
 
 ## Development bundles
 
+For a standalone user game, open a scene in the editor and choose **File → Export game…**.
+The exported **Game.app / Game.exe / Game** starts its own scene without Rust or the source
+checkout. First Trail includes a project manifest and complete-route export verification.
+See [native game export](docs/exporting.md) for build commands, ZIP packaging and platform scope.
+
 ```sh
 cargo build --release --locked -p bozzard-player -p bozzard-server -p bozzard-editor-app
 python3 tools/package.py --verify --window --editor-window
@@ -220,7 +225,7 @@ python3 tools/package.py --verify --window --editor-window
 
 This builds a host-native ZIP in `dist/`, including macOS `.app` bundles for the player and editor on macOS, editable built-in/imported scenes, and their image and model files. `--editor-window` additionally runs the packaged editor smoke and captures its UI. Default scene data, shaders and procedural textures are embedded, so the executables can run without the source checkout. Verification extracts the ZIP, runs a headless imported-scene save, loads that snapshot in the GPU suite, and optionally presents both native views from an empty working directory.
 
-This is development demo packaging, not a general user-game export pipeline. OS runtimes and drivers remain prerequisites. Public distribution still needs license/notices, signing/notarization, installer choices, and minimum OS/runtime baselines.
+The commands above create the development demo bundle. Use `tools/package.py --project` for a user-game export. OS runtimes and drivers remain prerequisites. Public distribution still needs license/notices, signing/notarization, installer choices, and minimum OS/runtime baselines.
 
 ## Cross-platform CI
 
@@ -259,3 +264,9 @@ Press **Escape** during a gizmo drag to restore its starting transform without a
 For trackpads, hover the 3D viewport and press **Tab** to toggle fly mode. Look around without holding a button; WASD, Space/Ctrl and Shift use the same controls as RMB flight. Press **Tab** or **Escape** to release the cursor; once navigation is released, **Escape** clears the selected object or inspected imported surface and its outline. Focus loss, Play, dialogs and switching to 2D also release fly mode. RMB navigation remains available.
 
 In Edit, use **Frame selected** (**F** over the viewport) to fit an object and its descendants, or **Frame all** (**Shift+F**) to fit drawable objects in the active layer. Imported mesh geometry and parent transforms are included. Selections without visible geometry center on their origin. Framing retains the 3D viewing direction and works in perspective and orthographic views; **Reset view** restores the authored camera view. It changes editor navigation only, without modifying scene cameras or Undo history. If geometry exceeds the authored camera's depth clipping range, the editor reports this instead of changing that camera.
+
+For screen-anchored counters and labels, open `examples/demo/scenes/hud-lab.json`. In Play, Space increments its Blueprint-driven HUD counter. See [HUD authoring and dynamic text](docs/text-rendering.md#screen-hud).
+
+Game lifecycle menus and Blueprint End Game: [Game flow](docs/game-flow.md). Try `examples/demo/scenes/game-flow-lab.json`.
+
+Play and export [Flap Woods](docs/flap-woods.md), a complete Blueprint game with HUD scoring, pause, game over and retry.

@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PinType {
     Exec,
+    Text,
     Number,
     Bool,
     Vector,
@@ -23,6 +24,7 @@ pub enum ObjectRef {
 #[serde(rename_all = "snake_case")]
 pub enum Value {
     Exec,
+    Text(String),
     Number(f32),
     Bool(bool),
     Vector([f32; 3]),
@@ -32,6 +34,7 @@ impl Value {
     pub fn kind(&self) -> PinType {
         match self {
             Self::Exec => PinType::Exec,
+            Self::Text(_) => PinType::Text,
             Self::Number(_) => PinType::Number,
             Self::Bool(_) => PinType::Bool,
             Self::Vector(_) => PinType::Vector,
@@ -40,10 +43,18 @@ impl Value {
     }
     pub fn valid(&self) -> bool {
         match self {
+            Self::Text(text) => text.len() <= 4096,
             Self::Object(ObjectRef::Id(id)) => !id.trim().is_empty(),
             Self::Number(n) => n.is_finite(),
             Self::Vector(v) => v.iter().all(|n| n.is_finite()),
             _ => true,
+        }
+    }
+    pub fn text(&self) -> Result<&str> {
+        if let Self::Text(text) = self {
+            Ok(text)
+        } else {
+            anyhow::bail!("expected text")
         }
     }
     pub fn object(&self) -> Result<&ObjectRef> {
@@ -105,6 +116,12 @@ impl InputKey {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum NodeKind {
+    Text,
+    NumberToText,
+    JoinText,
+    GetText,
+    SetText,
+    EndGame,
     Object,
     SelfObject,
     ObjectEqual,
@@ -173,7 +190,13 @@ pub enum NodeKind {
     DestroyPrefab,
 }
 impl NodeKind {
-    pub const ALL: [Self; 65] = [
+    pub const ALL: [Self; 71] = [
+        Self::Text,
+        Self::NumberToText,
+        Self::JoinText,
+        Self::GetText,
+        Self::SetText,
+        Self::EndGame,
         Self::Object,
         Self::SelfObject,
         Self::ObjectEqual,
@@ -242,6 +265,12 @@ impl NodeKind {
     ];
     pub fn title(self) -> &'static str {
         match self {
+            Self::Text => "Text",
+            Self::NumberToText => "Number to Text",
+            Self::JoinText => "Join Text",
+            Self::GetText => "Get Text",
+            Self::SetText => "Set Text",
+            Self::EndGame => "End Game",
             Self::Object => "Object Reference",
             Self::SelfObject => "Self",
             Self::ObjectEqual => "Same Object",
@@ -325,6 +354,12 @@ impl NodeKind {
     pub fn inputs(self) -> &'static [(&'static str, PinType)] {
         use PinType::*;
         match self {
+            Self::EndGame => &[("In", Exec), ("Message", Text)],
+            Self::Text => &[("Value", Text)],
+            Self::NumberToText => &[("Value", Number), ("Decimals (0–6)", Number)],
+            Self::JoinText => &[("A", Text), ("B", Text)],
+            Self::GetText => &[("Target", Object)],
+            Self::SetText => &[("In", Exec), ("Text", Text), ("Target", Object)],
             Self::Object => &[("Value", Object)],
             Self::Position | Self::Rotation | Self::Scale => &[("Target", Object)],
             Self::ObjectEqual => &[("A", Object), ("B", Object)],
@@ -383,6 +418,8 @@ impl NodeKind {
     pub fn outputs(self) -> &'static [(&'static str, PinType)] {
         use PinType::*;
         match self {
+            Self::Text | Self::NumberToText | Self::JoinText | Self::GetText => &[("Text", Text)],
+            Self::EndGame => &[],
             Self::BodyEnter | Self::BodyExit => &[("Then", Exec), ("Other", Object)],
             Self::SpawnPrefab => &[("Then", Exec), ("Instance", Object)],
             Self::Object | Self::SelfObject => &[("Value", Object)],
@@ -474,6 +511,7 @@ impl Node {
                         ObjectRef::SelfObject
                     }),
                     PinType::Exec => Value::Exec,
+                    PinType::Text => Value::Text(String::new()),
                     PinType::Number => Value::Number(0.),
                     PinType::Bool => Value::Bool(false),
                     PinType::Vector => Value::Vector(if kind == NodeKind::SetScale {

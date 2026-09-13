@@ -62,7 +62,30 @@ impl Eval<'_> {
             .map(|p| self.input(n, p))
             .collect::<Result<_>>()?;
         let value = match n.kind {
-            K::Number | K::Boolean | K::Vector | K::Object => v[0].clone(),
+            K::Text | K::Number | K::Boolean | K::Vector | K::Object => v[0].clone(),
+            K::NumberToText => {
+                let decimals = v[1].number()?;
+                ensure!(
+                    (0.0..=6.0).contains(&decimals) && decimals.fract() == 0.,
+                    "text decimals must be an integer in 0..6"
+                );
+                Value::Text(format!("{:.*}", decimals as usize, v[0].number()?))
+            }
+            K::JoinText => Value::Text(format!("{}{}", v[0].text()?, v[1].text()?)),
+            K::GetText => {
+                let id = reference_id(v[0].object()?, self.owner).context("text target is None")?;
+                let entity = self
+                    .entities
+                    .get(id)
+                    .context("text target does not exist")?;
+                Value::Text(
+                    self.world
+                        .get::<TextRendering>(*entity)
+                        .context("Get Text needs Text Rendering")?
+                        .text
+                        .clone(),
+                )
+            }
             K::SelfObject => Value::Object(ObjectRef::Id(self.owner.into())),
             K::BodyEnter | K::BodyExit if socket.port == 1 => Value::Object(
                 self.other
@@ -127,7 +150,7 @@ impl Eval<'_> {
             }
             _ => anyhow::bail!("node {id} has no data output"),
         };
-        ensure!(value.valid(), "non-finite output at node {id}");
+        ensure!(value.valid(), "invalid or oversized output at node {id}");
         self.cache.insert(socket, value.clone());
         Ok(value)
     }
@@ -160,7 +183,7 @@ impl SceneInstance {
         dt: f32,
         input: GameplayInput,
     ) -> Result<()> {
-        if !self.has_blueprints() {
+        if !crate::game_flow::simulation_running(world) || !self.has_blueprints() {
             return Ok(());
         }
         ensure!(
@@ -268,7 +291,9 @@ impl SceneInstance {
                 .cloned()
                 .collect();
             for object in &owners {
-                if !self.entities.contains_key(&object.id) {
+                if !crate::game_flow::simulation_running(world)
+                    || !self.entities.contains_key(&object.id)
+                {
                     continue;
                 }
                 let overlap = contacts.get(&object.id).unwrap_or(&empty);
@@ -284,7 +309,9 @@ impl SceneInstance {
                         run.variables = graph.variables.clone();
                     }
                     for event in graph.nodes.iter().filter(|n| n.kind.event()) {
-                        if !self.entities.contains_key(&object.id) {
+                        if !crate::game_flow::simulation_running(world)
+                            || !self.entities.contains_key(&object.id)
+                        {
                             break;
                         }
                         let key_index = InputKey::ALL.iter().position(|k| *k == event.key).unwrap();
@@ -323,11 +350,15 @@ impl SceneInstance {
                                 port: 0,
                             }]);
                             while let Some(output) = queue.pop_front() {
-                                if !self.entities.contains_key(&object.id) {
+                                if !crate::game_flow::simulation_running(world)
+                                    || !self.entities.contains_key(&object.id)
+                                {
                                     break;
                                 }
                                 for wire in graph.wires.iter().filter(|w| w.from == output) {
-                                    if !self.entities.contains_key(&object.id) {
+                                    if !crate::game_flow::simulation_running(world)
+                                        || !self.entities.contains_key(&object.id)
+                                    {
                                         break;
                                     }
                                     ensure!(
@@ -419,6 +450,22 @@ impl SceneInstance {
                                                 world.insert(entity, transform)?;
                                                 return Err(error);
                                             }
+                                        }
+                                        K::EndGame => {
+                                            world.resource_mut::<crate::GameSession>()
+                                                .context("End Game needs Game Flow enabled in scene settings")?
+                                                .end_game(value.text()?)?;
+                                        }
+                                        K::SetText => {
+                                            let next = value.text()?;
+                                            ensure!(
+                                                next.len() <= 4096,
+                                                "text exceeds 4096 UTF-8 bytes"
+                                            );
+                                            world
+                                                .get_mut::<TextRendering>(entity)
+                                                .context("Set Text needs Text Rendering")?
+                                                .text = next.into();
                                         }
                                         K::SetColor => {
                                             let color = value.vector()?;

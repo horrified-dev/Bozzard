@@ -23,6 +23,45 @@ pub struct SelectedSurface<'a> {
 }
 
 impl Editor {
+    /// HUD is drawn in stable object-ID order above the scene. Hit-test front to back.
+    pub fn pick_hud(
+        &self,
+        layer: Layer,
+        size: [u32; 2],
+        scale: f32,
+        ndc: [f32; 2],
+    ) -> Result<Option<String>> {
+        ensure!(
+            size.iter().all(|v| *v > 0) && scale.is_finite() && scale > 0.,
+            "invalid HUD viewport"
+        );
+        let mut objects: Vec<_> = self.scene.objects.iter().collect();
+        objects.sort_by(|a, b| b.id.cmp(&a.id));
+        for object in objects {
+            let Some(text) = &object.text_rendering else {
+                continue;
+            };
+            if !text.enabled || text.layer != layer || text.color[3] == 0. {
+                continue;
+            }
+            let mesh = bozzard_render_assets::text_mesh(text);
+            let Some(screen) = mesh.screen else {
+                continue;
+            };
+            let Some([min, max]) = bozzard_render::text_bounds(&mesh)? else {
+                continue;
+            };
+            let p = screen
+                .matrix(size, scale)
+                .inverse()
+                .transform_point3(Vec3::new(ndc[0], ndc[1], 0.));
+            if p.x >= min.x && p.x <= max.x && p.y >= min.y && p.y <= max.y {
+                return Ok(Some(object.id.clone()));
+            }
+        }
+        Ok(None)
+    }
+
     /// Called after publishing a catalog or returning from document operations.
     pub fn repair_surface_selection(&mut self) {
         if self.selected_surface().is_none() {
@@ -211,6 +250,7 @@ impl Editor {
             let d = inverse.transform_vector3(direction);
             if let Some(text) = &object.text_rendering
                 && text.enabled
+                && text.screen.is_none()
                 && text.color[3] > 0.
                 && text.layer == layer
                 && d.z.abs() >= 1e-8

@@ -1,6 +1,9 @@
 //! Shared asset-to-renderer adapter used by the editor and standalone player.
 //! Neither the CPU importer nor the renderer depends on this bridge.
+mod game_flow;
 mod residency;
+pub use game_flow::game_menu;
+
 use bozzard_assets::{
     AssetData, Filter, ImageData, MeshData, Sampler, SurfaceShading, TextureMap, Wrap,
 };
@@ -11,6 +14,10 @@ use std::sync::Arc;
 /// The same text settings feed rendering, editor bounds, and picking.
 pub fn text_mesh(text: &bozzard_scene::TextRendering) -> bozzard_render::TextMesh {
     bozzard_render::TextMesh {
+        screen: text.screen.map(|s| bozzard_render::ScreenText {
+            anchor: s.anchor,
+            offset: s.offset,
+        }),
         text: text.text.clone(),
         font_size: text.font_size,
         max_width: text.max_width,

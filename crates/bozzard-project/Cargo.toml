@@ -1,0 +1,17 @@
+[package]
+name = "bozzard-project"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+bozzard-scene.workspace = true
+bozzard-assets.workspace = true
+bozzard-demo.workspace = true
+
+[lints]
+workspace = true

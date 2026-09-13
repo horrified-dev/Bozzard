@@ -429,6 +429,17 @@ impl App {
         let mut fit_gi = false;
         let gi_current = self.editor.gi_current();
         ui.add_enabled_ui(self.editor.play.is_none(), |ui| {
+            egui::CollapsingHeader::new("GAME FLOW").show(ui, |ui| {
+                let mut enabled = scene.game_flow.is_some();
+                if ui.checkbox(&mut enabled, "Start, pause and retry menus").changed() {
+                    scene.game_flow = enabled.then(|| bozzard_scene::GameFlowSettings { title: scene.name.clone(), ..Default::default() });
+                }
+                if let Some(flow) = &mut scene.game_flow {
+                    ui.label("Title"); ui.text_edit_singleline(&mut flow.title);
+                    ui.label("Instructions"); ui.text_edit_multiline(&mut flow.instructions);
+                    ui.small("Enter starts · Escape pauses · R retries · Q quits. Use End Game in a Blueprint to show the retry menu.");
+                }
+            });
             egui::CollapsingHeader::new("GLOBAL ILLUMINATION")
                 .open(if self.smoke_prefab_frame.is_some() {
                     Some(false)
@@ -637,6 +648,31 @@ fn component_section(
 fn text_inspector(ui: &mut egui::Ui, text: &mut bozzard_scene::TextRendering) {
     use bozzard_scene::{TextAlignment, TextFont};
     ui.checkbox(&mut text.enabled, "Enabled");
+    let mut screen = text.screen.is_some();
+    if ui.checkbox(&mut screen, "Screen HUD").changed() {
+        text.screen = screen.then(bozzard_scene::ScreenText::default);
+        text.font_size = if screen { 24. } else { 0.5 };
+        text.max_width = None;
+    }
+    if let Some(screen) = &mut text.screen {
+        ui.weak("Pinned to the viewport. Position and size use pixels; entity transforms do not move HUD text.");
+        ui.horizontal(|ui| {
+            ui.label("Anchor X/Y");
+            for value in &mut screen.anchor {
+                ui.add(egui::DragValue::new(value).speed(0.01).range(0.0..=1.0));
+            }
+        });
+        ui.horizontal(|ui| {
+            ui.label("Offset X/Y");
+            for value in &mut screen.offset {
+                ui.add(
+                    egui::DragValue::new(value)
+                        .speed(1.)
+                        .range(-10000.0..=10000.0),
+                );
+            }
+        });
+    }
     ui.horizontal(|ui| {
         ui.selectable_value(&mut text.layer, Layer::ThreeD, "3D");
         ui.selectable_value(&mut text.layer, Layer::TwoD, "2D");
@@ -655,7 +691,11 @@ fn text_inspector(ui: &mut egui::Ui, text: &mut bozzard_scene::TextRendering) {
             ui.selectable_value(&mut text.font, TextFont::Monospace, "Monospace");
         });
     ui.horizontal(|ui| {
-        ui.label("Font size (local units)");
+        ui.label(if text.screen.is_some() {
+            "Font size (pixels)"
+        } else {
+            "Font size (local units)"
+        });
         ui.add(
             egui::DragValue::new(&mut text.font_size)
                 .speed(0.01)
@@ -673,7 +713,11 @@ fn text_inspector(ui: &mut egui::Ui, text: &mut bozzard_scene::TextRendering) {
     }
     if let Some(width) = &mut text.max_width {
         ui.horizontal(|ui| {
-            ui.label("Width (local units)");
+            ui.label(if text.screen.is_some() {
+                "Width (pixels)"
+            } else {
+                "Width (local units)"
+            });
             ui.add(
                 egui::DragValue::new(width)
                     .speed(0.05)
