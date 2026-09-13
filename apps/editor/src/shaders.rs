@@ -259,7 +259,10 @@ impl App {
                 }
             });
         });
-        ui.small("Drag headers to move · Output → input to connect · Right-click input to disconnect · Middle-drag / scroll to pan · Ctrl+scroll to zoom · Preview on the Scene tab");
+        ui.small("Drag headers to move · Output → input to connect · Right-click input to disconnect · Middle-drag / scroll to pan · Ctrl+scroll to zoom · Preview frames the selected object");
+        if let Err(error) = self.shader_preview(ui) {
+            ui.colored_label(egui::Color32::LIGHT_RED, format!("Preview: {error:#}"));
+        }
         if editing && !ui.ctx().egui_wants_keyboard_input() {
             if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
                 self.shader_pane.connecting = None;
@@ -282,6 +285,102 @@ impl App {
             let result = self.editor.set_shader_graph(&object.id, Some(graph));
             self.result(result);
         }
+    }
+}
+impl App {
+    /// Live material preview: the real renderer draws the selected object
+    /// framed by a fixed orbit camera, with an advancing clock so Time nodes
+    /// animate without pressing Play.
+    fn shader_preview(&mut self, ui: &mut egui::Ui) -> Result<()> {
+        let height = (ui.available_height() * 0.35).clamp(140., 280.);
+        let (rect, _) = ui.allocate_exact_size(
+            Vec2::new(ui.available_width().max(1.), height),
+            Sense::hover(),
+        );
+        let ppp = ui.ctx().pixels_per_point();
+        let limit = self.gpu.device.limits().max_texture_dimension_2d.min(4096);
+        let size = [
+            (rect.width() * ppp).round().clamp(1.0, limit as f32) as u32,
+            (rect.height() * ppp).round().clamp(1.0, limit as f32) as u32,
+        ];
+        if self.preview_target.as_ref().is_none_or(|t| t.size != size) {
+            let texture = self.gpu.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("Shader graph preview"),
+                size: wgpu::Extent3d {
+                    width: size[0],
+                    height: size[1],
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::COPY_SRC,
+                view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
+            });
+            let view = texture.create_view(&Default::default());
+            // egui samples gamma colors; reinterpret the sRGB render target as UNORM for the UI.
+            let sampled = texture.create_view(&wgpu::TextureViewDescriptor {
+                format: Some(wgpu::TextureFormat::Rgba8Unorm),
+                ..Default::default()
+            });
+            let mut renderer = self.render_state.renderer.write();
+            let id = if let Some(target) = &self.preview_target {
+                renderer.update_egui_texture_from_wgpu_texture(
+                    &self.gpu.device,
+                    &sampled,
+                    wgpu::FilterMode::Linear,
+                    target.id,
+                );
+                target.id
+            } else {
+                renderer.register_native_texture(
+                    &self.gpu.device,
+                    &sampled,
+                    wgpu::FilterMode::Linear,
+                )
+            };
+            self.preview_target = Some(Target {
+                texture,
+                view,
+                id,
+                size,
+            });
+        }
+        let aspect = size[0] as f32 / size[1] as f32;
+        let mut scene = self.editor.render(Layer::ThreeD, aspect)?;
+        self.preview_time = (self.preview_time + ui.input(|i| i.stable_dt.min(0.05))) % 4096.;
+        scene.display.time_seconds = self.preview_time;
+        let bounds = self.editor.frame_selection_bounds(Layer::ThreeD)?;
+        let [min, max] = bounds.unwrap_or([Vec3::splat(-1.), Vec3::splat(1.)]);
+        let center = (min + max) * 0.5;
+        let radius = ((max - min).length() * 0.5).max(0.5);
+        let eye = center + Vec3::new(1., 0.55, 1.).normalize() * (radius * 2.4 + 0.4);
+        let lens = glam::camera::rh::proj::directx::perspective(
+            50f32.to_radians(),
+            aspect,
+            0.05,
+            radius * 8. + 20.,
+        );
+        scene.view_projection = lens * glam::camera::rh::view::look_at_mat4(eye, center, Vec3::Y);
+        self.residency.advance(
+            &self.gpu,
+            &mut self.renderer,
+            &self.editor.assets,
+            4 * 1024 * 1024,
+        )?;
+        let target = self.preview_target.as_ref().unwrap();
+        self.renderer.draw(&self.gpu, &target.view, size, &scene)?;
+        ui.painter().image(
+            target.id,
+            rect,
+            Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+            Color32::WHITE,
+        );
+        ui.ctx().request_repaint();
+        Ok(())
     }
 }
 const WIDTH: f32 = 260.;

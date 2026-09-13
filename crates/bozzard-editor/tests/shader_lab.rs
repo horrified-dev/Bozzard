@@ -12,7 +12,11 @@ fn shader_lab_loads_and_codegens_all_graphs() {
         .iter()
         .filter_map(|o| o.shader_graph.as_ref())
         .collect();
-    assert_eq!(graphs.len(), 2, "example scene should embed two graphs");
+    let names: Vec<_> = graphs.iter().map(|g| g.name.as_str()).collect();
+    assert!(
+        names.contains(&"Pulse Emissive") && names.contains(&"Texture Fade"),
+        "example scene should embed the two example graphs, found {names:?}"
+    );
     for graph in &graphs {
         graph.validate().unwrap();
         let code = shader_source(graph).unwrap();
@@ -20,10 +24,16 @@ fn shader_lab_loads_and_codegens_all_graphs() {
         assert!(code.surface.contains("params."));
     }
     // Pulse Emissive drives only Emissive; Texture Fade drives Base Color and Alpha.
-    let pulse = shader_source(graphs[0]).unwrap().surface.clone();
+    let pulse = shader_source(graphs.iter().find(|g| g.name == "Pulse Emissive").unwrap())
+        .unwrap()
+        .surface
+        .clone();
     assert!(pulse.contains("params.emissive"));
     assert!(!pulse.contains("params.base ="));
-    let fade = shader_source(graphs[1]).unwrap().surface.clone();
+    let fade = shader_source(graphs.iter().find(|g| g.name == "Texture Fade").unwrap())
+        .unwrap()
+        .surface
+        .clone();
     assert!(fade.contains("params.base ="));
     assert!(fade.contains("params.alpha = clamp"));
 }
