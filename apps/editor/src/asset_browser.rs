@@ -951,10 +951,21 @@ fn snapshots(editor: &Editor) -> Vec<AssetSnapshot> {
 /// an imported mesh. Invalid triangles are ignored here and remain reported by
 /// the asset loader itself.
 fn sample_mesh(mesh: &bozzard_assets::MeshData) -> MeshPreview {
+    const MAX_PREVIEW_TRIANGLES: usize = 400;
+    // Even stride over the whole index buffer: first-N sampling renders one
+    // magnified patch (the sphere models' first tris are a tiny cap) or a
+    // single edge-on face strip (rounded boxes), not the object.
+    let triangle_count = mesh.indices.len() / 3;
+    let stride = triangle_count.div_ceil(MAX_PREVIEW_TRIANGLES).max(1);
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     let mut remap = HashMap::new();
-    for triangle in mesh.indices.chunks_exact(3).take(160) {
+    for triangle in mesh
+        .indices
+        .chunks_exact(3)
+        .step_by(stride * 3)
+        .take(MAX_PREVIEW_TRIANGLES)
+    {
         let mut local = [0; 3];
         let mut valid = true;
         for (slot, &index) in triangle.iter().enumerate() {
@@ -1152,6 +1163,60 @@ fn draw_mesh_preview(painter: &egui::Painter, rect: Rect, vertices: &[[f32; 8]],
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mesh_preview_samples_the_whole_mesh_not_just_the_first_triangles() {
+        // 2000 triangles: the first 500 huddle in one corner, the rest spread
+        // across the unit cube. First-N sampling would miss everything else.
+        let mut vertices: Vec<[f32; 8]> = (0..500)
+            .map(|i| {
+                let f = i as f32 * 0.0001;
+                [f, f, f, 0., 1., 0., 0., 0.]
+            })
+            .collect();
+        let mut indices: Vec<u32> = Vec::new();
+        for i in 0..500u32 {
+            indices.extend([i, i, i]);
+        }
+        let spread = [
+            [0., 0., 0.],
+            [1., 0., 0.],
+            [0., 1., 0.],
+            [0., 0., 1.],
+            [1., 1., 0.],
+            [1., 0., 1.],
+            [0., 1., 1.],
+            [1., 1., 1.],
+        ];
+        for corner in spread {
+            let base = vertices.len() as u32;
+            vertices.push([corner[0], corner[1], corner[2], 0., 1., 0., 0., 0.]);
+            vertices.push([corner[0] + 0.01, corner[1], corner[2], 0., 1., 0., 0., 0.]);
+            vertices.push([corner[0], corner[1] + 0.01, corner[2], 0., 1., 0., 0., 0.]);
+            indices.extend([base, base + 1, base + 2]);
+        }
+        let mesh = bozzard_assets::MeshData {
+            vertices,
+            indices,
+            parts: vec![],
+            warnings: vec![],
+        };
+        let preview = sample_mesh(&mesh);
+        let xs: Vec<_> = preview.vertices.iter().map(|v| v[0]).collect();
+        let ys: Vec<_> = preview.vertices.iter().map(|v| v[1]).collect();
+        let zs: Vec<_> = preview.vertices.iter().map(|v| v[2]).collect();
+        assert_eq!(preview.index_count / 3, 2000);
+        assert!(
+            *xs.iter()
+                .cloned()
+                .chain(zs.iter().copied())
+                .reduce(f32::max)
+                .unwrap()
+                > 0.9,
+            "sample must reach the far corners, not only the corner cluster"
+        );
+        assert!(*ys.iter().max_by(f32::total_cmp).unwrap() > 0.9);
+    }
 
     #[test]
     fn blueprints_folder_lists_saved_graphs_without_mutating_scene() {
