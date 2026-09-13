@@ -24,6 +24,19 @@ fn shader_lab_loads_and_codegens_all_graphs() {
         assert!(code.surface.contains("graph_material_surface"));
         assert!(code.surface.contains("params."));
     }
+    let water =
+        Scene::from_json(include_str!("../../../examples/demo/scenes/water-lab.json")).unwrap();
+    let water_graphs: Vec<_> = water
+        .objects
+        .iter()
+        .filter_map(|o| o.shader_graph.as_ref())
+        .collect();
+    assert_eq!(water_graphs.len(), 1, "water lab embeds the Water graph");
+    let wsource = shader_source(water_graphs[0]).unwrap();
+    // Water drives the surface normal and emissive sparkle; base stays opaque.
+    assert!(wsource.surface.contains("params.normal"));
+    assert!(wsource.surface.contains("params.emissive"));
+    assert!(!wsource.surface.contains("params.alpha ="));
     // Pulse Emissive drives only Emissive; Texture Fade drives Base Color and Alpha.
     let pulse = shader_source(graphs.iter().find(|g| g.name == "Pulse Emissive").unwrap())
         .unwrap()
