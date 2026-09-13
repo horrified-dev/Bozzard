@@ -496,7 +496,7 @@ impl ShaderGraph {
         (2, "roughness", Some(("0.045", "1.0"))),
         (3, "emissive", None),
         (4, "alpha", Some(("0.0", "1.0"))),
-        (5, "tangent_normal", None),
+        (5, "normal", None),
     ];
     /// WGSL body of `graph_material_surface`, overriding only connected Master inputs.
     /// The host provides `default_material_surface` with the same signature and the
@@ -583,6 +583,32 @@ mod tests {
             vec![],
         );
         assert!(two.validate().is_err());
+    }
+    #[test]
+    fn master_channels_write_existing_surface_params_fields() {
+        // Every connected Master channel must assign a real SurfaceParams field;
+        // a typo here only fails at wgpu module creation in the editor.
+        for (port, kind, field) in [
+            (0, NodeKind::Vector, "base"),
+            (1, NodeKind::Float, "metallic"),
+            (2, NodeKind::Float, "roughness"),
+            (3, NodeKind::Vector, "emissive"),
+            (4, NodeKind::Float, "alpha"),
+            (5, NodeKind::Vector, "normal"),
+        ] {
+            let g = graph(
+                vec![
+                    Node::new(1, NodeKind::Master, [0., 0.]),
+                    Node::new(2, kind, [200., 0.]),
+                ],
+                vec![wire(2, 0, 1, port)],
+            );
+            assert!(
+                g.surface_function()
+                    .unwrap()
+                    .contains(&format!("params.{field} ="))
+            );
+        }
     }
     #[test]
     fn rejects_cycles_type_mismatches_and_double_wires() {
