@@ -514,7 +514,7 @@ impl AssetBrowser {
                                 ui,
                                 path,
                                 "Blueprint",
-                                Color32::from_rgb(178, 155, 244),
+                                GraphIcon::Blueprint,
                                 self.selected_blueprint.as_ref() == Some(*path),
                             );
                             if response.clicked() || response.secondary_clicked() {
@@ -596,7 +596,7 @@ impl AssetBrowser {
                                 ui,
                                 path,
                                 "Shader graph",
-                                super::theme::GREEN,
+                                GraphIcon::Shader,
                                 self.selected_shader.as_ref() == Some(*path),
                             );
                             if response.clicked() || response.secondary_clicked() {
@@ -660,7 +660,7 @@ impl AssetBrowser {
         ui: &mut egui::Ui,
         path: &std::path::Path,
         kind: &str,
-        icon_color: Color32,
+        icon: GraphIcon,
         selected: bool,
     ) -> egui::Response {
         const TILE: Vec2 = Vec2::new(96.0, 92.0);
@@ -693,7 +693,10 @@ impl AssetBrowser {
                         ui.allocate_exact_size(Vec2::new(TILE.x, 64.0), egui::Sense::click());
                     let icon_painter = ui.painter_at(preview.0);
                     icon_painter.rect_filled(preview.0, 2.0, Color32::from_gray(25));
-                    draw_node_graph_icon(&icon_painter, preview.0, icon_color);
+                    match icon {
+                        GraphIcon::Blueprint => draw_blueprint_icon(&icon_painter, preview.0),
+                        GraphIcon::Shader => draw_shader_icon(&icon_painter, preview.0),
+                    }
                     let name = ui
                         .add(egui::Button::selectable(selected, name).truncate())
                         .on_hover_text(file);
@@ -1152,7 +1155,7 @@ fn matches_filter(filter: AssetFilter, kind: AssetKind) -> bool {
         || matches!((filter, kind), (AssetFilter::Prefabs, AssetKind::Prefab))
 }
 
-/// Mini node-graph glyph used by prefab tiles and graph-file tiles.
+/// Mini node-graph glyph used by prefab tiles.
 fn draw_node_graph_icon(painter: &egui::Painter, rect: Rect, color: Color32) {
     let c = rect.center();
     for (dx, dy, size) in [(0.0, -12.0, 22.0), (-22.0, 18.0, 14.0), (22.0, 18.0, 14.0)] {
@@ -1165,6 +1168,51 @@ fn draw_node_graph_icon(painter: &egui::Painter, rect: Rect, color: Color32) {
             3.0,
             color,
         );
+    }
+}
+
+/// Which graph-file glyph to draw in a tile.
+#[derive(Clone, Copy)]
+enum GraphIcon {
+    /// Lightning bolt in ember orange — blueprints drive object behavior.
+    Blueprint,
+    /// Stacked sine waves in teal — shader graphs write surface math.
+    Shader,
+}
+
+fn draw_blueprint_icon(painter: &egui::Painter, rect: Rect) {
+    let color = Color32::from_rgb(235, 148, 74);
+    let c = rect.center();
+    let s = 15.0;
+    let pts: Vec<egui::Pos2> = [
+        [0.2, -1.0],
+        [0.62, -1.0],
+        [-0.12, -0.14],
+        [0.3, -0.14],
+        [-0.52, 1.0],
+        [-0.18, 0.08],
+        [-0.66, 0.08],
+    ]
+    .iter()
+    .map(|p| egui::pos2(c.x + p[0] * s, c.y + p[1] * s))
+    .collect();
+    painter.add(egui::Shape::convex_polygon(pts, color, Stroke::NONE));
+}
+
+fn draw_shader_icon(painter: &egui::Painter, rect: Rect) {
+    let color = Color32::from_rgb(98, 192, 208);
+    let c = rect.center();
+    for row in -1..=1 {
+        let y = c.y + row as f32 * 11.0;
+        let pts: Vec<egui::Pos2> = (-6..=6)
+            .map(|i| {
+                egui::pos2(
+                    c.x + i as f32 * 3.8,
+                    y + (i as f32 / 6.0 * std::f32::consts::PI).sin() * 4.5,
+                )
+            })
+            .collect();
+        painter.add(egui::Shape::line(pts, Stroke::new(2.4, color)));
     }
 }
 
