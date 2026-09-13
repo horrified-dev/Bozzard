@@ -514,7 +514,6 @@ impl AssetBrowser {
                                 ui,
                                 path,
                                 "Blueprint",
-                                "◇",
                                 Color32::from_rgb(178, 155, 244),
                                 self.selected_blueprint.as_ref() == Some(*path),
                             );
@@ -597,7 +596,6 @@ impl AssetBrowser {
                                 ui,
                                 path,
                                 "Shader graph",
-                                "◈",
                                 super::theme::GREEN,
                                 self.selected_shader.as_ref() == Some(*path),
                             );
@@ -662,7 +660,6 @@ impl AssetBrowser {
         ui: &mut egui::Ui,
         path: &std::path::Path,
         kind: &str,
-        icon: &str,
         icon_color: Color32,
         selected: bool,
     ) -> egui::Response {
@@ -692,13 +689,7 @@ impl AssetBrowser {
                 ui.set_width(TILE.x);
                 ui.set_min_height(TILE.y);
                 let preview = ui.allocate_exact_size(Vec2::new(TILE.x, 64.0), egui::Sense::click());
-                ui.painter().text(
-                    preview.0.center(),
-                    egui::Align2::CENTER_CENTER,
-                    icon,
-                    egui::FontId::proportional(30.0),
-                    icon_color,
-                );
+                draw_node_graph_icon(&ui.painter_at(preview.0), preview.0, icon_color);
                 let label = ui.add(egui::Label::new(name).truncate());
                 ui.small(kind);
                 preview.1 | label
@@ -1153,6 +1144,22 @@ fn matches_filter(filter: AssetFilter, kind: AssetKind) -> bool {
         || matches!((filter, kind), (AssetFilter::Prefabs, AssetKind::Prefab))
 }
 
+/// Mini node-graph glyph used by prefab tiles and graph-file tiles.
+fn draw_node_graph_icon(painter: &egui::Painter, rect: Rect, color: Color32) {
+    let c = rect.center();
+    for (dx, dy, size) in [(0.0, -12.0, 22.0), (-22.0, 18.0, 14.0), (22.0, 18.0, 14.0)] {
+        let center = c + Vec2::new(dx, dy);
+        if dy > 0.0 {
+            painter.line_segment([c, center], egui::Stroke::new(1.5, color));
+        }
+        painter.rect_filled(
+            Rect::from_center_size(center, Vec2::splat(size)),
+            3.0,
+            color,
+        );
+    }
+}
+
 fn draw_preview(
     ui: &egui::Ui,
     rect: Rect,
@@ -1163,19 +1170,7 @@ fn draw_preview(
     painter.rect_filled(rect, 2.0, Color32::from_gray(25));
     match (asset.kind, thumbnail, asset.mesh.as_ref()) {
         (AssetKind::Prefab, _, _) => {
-            let c = rect.center();
-            let color = Color32::from_rgb(178, 155, 244);
-            for (dx, dy, size) in [(0.0, -12.0, 22.0), (-22.0, 18.0, 14.0), (22.0, 18.0, 14.0)] {
-                let center = c + Vec2::new(dx, dy);
-                if dy > 0.0 {
-                    painter.line_segment([c, center], egui::Stroke::new(1.5, color));
-                }
-                painter.rect_filled(
-                    Rect::from_center_size(center, Vec2::splat(size)),
-                    3.0,
-                    color,
-                );
-            }
+            draw_node_graph_icon(&painter, rect, Color32::from_rgb(178, 155, 244));
         }
         (AssetKind::Image, Some(texture), _) => {
             let size = texture.size_vec2();
