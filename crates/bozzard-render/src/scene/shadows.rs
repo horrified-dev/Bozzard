@@ -383,7 +383,7 @@ impl SceneRenderer {
         match kind {
             MeshKind::Text(text) => self.text.as_ref().unwrap().mesh(text).unwrap(),
             MeshKind::Quad => &self.quad,
-            MeshKind::Cube => &self.cube,
+            MeshKind::Cube | MeshKind::Sphere => &self.cube,
             MeshKind::Imported(id) => &self.imported_meshes[id],
             MeshKind::ModelPart(id, index) => &self.models[id][*index].mesh,
         }

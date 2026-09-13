@@ -190,6 +190,9 @@ impl PbrRenderer {
         }
     }
 
+    pub(crate) fn material_layout(&self) -> &wgpu::BindGroupLayout {
+        &self.layout
+    }
     pub fn upload(
         &self,
         gpu: &Gpu,

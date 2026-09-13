@@ -31,6 +31,7 @@ mod lights;
 mod loading;
 mod particles;
 mod post_processing;
+mod shaders;
 mod snapping;
 mod surfaces;
 mod theme;
@@ -52,6 +53,7 @@ struct Workspace {
     settings_visible: bool,
     effects_page: bool,
     blueprints_visible: bool,
+    shaders_visible: bool,
     stats_visible: bool,
     colliders_visible: bool,
     gi_visible: bool,
@@ -71,6 +73,7 @@ impl Default for Workspace {
             settings_visible: true,
             effects_page: true,
             blueprints_visible: false,
+            shaders_visible: false,
             stats_visible: false,
             colliders_visible: true,
             gi_visible: false,
@@ -119,6 +122,9 @@ struct App {
     hierarchy_rename: Option<(String, String, bool)>,
     asset_browser: asset_browser::AssetBrowser,
     blueprint_pane: blueprints::BlueprintPane,
+    shader_pane: shaders::ShaderPane,
+    preview_target: Option<Target>,
+    preview_time: f32,
     loading: Option<loading::Loading>,
     import_queue: std::collections::VecDeque<PathBuf>,
     refresh: Option<loading::Refresh>,
@@ -211,6 +217,9 @@ impl App {
             hierarchy_rename: None,
             asset_browser: asset_browser::AssetBrowser::default(),
             blueprint_pane: blueprints::BlueprintPane::default(),
+            shader_pane: shaders::ShaderPane::default(),
+            preview_target: None,
+            preview_time: 0.,
             loading: None,
             import_queue: std::collections::VecDeque::new(),
             refresh: None,
@@ -524,6 +533,7 @@ impl App {
                         }
                         ui.menu_button("View", |ui| {
                             ui.checkbox(&mut self.workspace.blueprints_visible, "Blueprint Editor");
+                            ui.checkbox(&mut self.workspace.shaders_visible, "Shader Editor");
                             ui.checkbox(&mut self.workspace.assets_visible, "Content Browser");
                             ui.checkbox(&mut self.workspace.settings_visible, "Scene Settings");
                             ui.checkbox(&mut self.workspace.stats_visible, "Renderer statistics");
@@ -997,6 +1007,22 @@ impl App {
                     self.result(result);
                     self.open_last_blueprint();
                 }
+                if let Some(owner) = output.shader_owner {
+                    self.editor.select_object(Some(owner));
+                    self.workspace.shaders_visible = true;
+                }
+                if output.shader_import_requested
+                    && let Some(owner) = self.editor.selected.clone()
+                {
+                    self.shader_dialog(files::Kind::LoadShaderGraph, &owner);
+                }
+                if let Some(path) = output.shader_path
+                    && let Some(owner) = self.editor.selected.clone()
+                {
+                    let result = self.editor.load_shader_graph(&owner, &path);
+                    self.result(result);
+                    self.workspace.shaders_visible = true;
+                }
                 if output.import_requested {
                     self.dialog = Some(files::Dialog::new(files::Kind::Import, &self.editor.path));
                 }
@@ -1037,6 +1063,7 @@ impl App {
         }
         if self.editor.play.is_none()
             && !self.workspace.blueprints_visible
+            && !self.workspace.shaders_visible
             && !self.mouse_captured
             && !ctx.egui_wants_keyboard_input()
             && ctx.input_mut(|i| {
@@ -1070,6 +1097,7 @@ impl App {
             // Drag/rename/dialog handling is already guarded above.
             if self.escape_deselect_requested
                 && !self.workspace.blueprints_visible
+                && !self.workspace.shaders_visible
                 && self.editor.selected.is_some()
                 && !self.fly_latched
                 && self.navigation_button.is_none()
@@ -1107,6 +1135,7 @@ impl App {
                 self.result(r);
             }
             if !self.workspace.blueprints_visible
+                && !self.workspace.shaders_visible
                 && self.editor.selected_object().is_some()
                 && ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::D))
             {
@@ -1169,6 +1198,7 @@ impl eframe::App for App {
                 && self.dialog.is_none()
                 && !self.confirm_discard
                 && !self.workspace.blueprints_visible
+                && !self.workspace.shaders_visible
                 && (!self.workspace.layer_2d
                     || self
                         .editor
@@ -1435,10 +1465,34 @@ impl eframe::App for App {
                     ui.disable();
                 }
                 ui.horizontal(|ui| {
-                    ui.selectable_value(&mut self.workspace.blueprints_visible, false, "Scene");
-                    ui.selectable_value(&mut self.workspace.blueprints_visible, true, "Blueprint");
+                    let scene = ui.selectable_label(
+                        !self.workspace.blueprints_visible && !self.workspace.shaders_visible,
+                        "Scene",
+                    );
+                    if scene.clicked() {
+                        self.workspace.blueprints_visible = false;
+                        self.workspace.shaders_visible = false;
+                    }
+                    let blueprint = ui.selectable_label(
+                        self.workspace.blueprints_visible && !self.workspace.shaders_visible,
+                        "Blueprint",
+                    );
+                    if blueprint.clicked() {
+                        self.workspace.blueprints_visible = true;
+                        self.workspace.shaders_visible = false;
+                    }
+                    let shader = ui.selectable_label(self.workspace.shaders_visible, "Shader");
+                    if shader.clicked() {
+                        self.workspace.shaders_visible = true;
+                        self.workspace.blueprints_visible = false;
+                    }
                 });
-                if self.workspace.blueprints_visible {
+                if self.workspace.shaders_visible {
+                    if let Err(error) = self.sync_assets() {
+                        self.result(Err(error));
+                    }
+                    self.shader_ui(ui);
+                } else if self.workspace.blueprints_visible {
                     if let Err(error) = self.sync_assets() {
                         self.result(Err(error));
                     }

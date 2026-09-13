@@ -5,6 +5,7 @@ use std::sync::Arc;
 pub(super) fn checks(gpu: &Gpu) -> Result<()> {
     let mut renderer = SceneRenderer::new(gpu, wgpu::TextureFormat::Rgba8Unorm);
     let scene = RenderScene {
+        shader_time: 0.,
         particles: Vec::new(),
         fog: Default::default(),
         gi: None,
@@ -25,6 +26,7 @@ pub(super) fn checks(gpu: &Gpu) -> Result<()> {
                 uv_scale: [128.; 2],
                 texture: TextureKind::White,
                 lit: false,
+                shader: None,
             },
         }],
     };

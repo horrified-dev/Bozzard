@@ -56,6 +56,7 @@ pub(super) fn checks(gpu: &Gpu) -> Result<()> {
             uv_scale: [1.; 2],
             texture: TextureKind::White,
             lit: true,
+            shader: None,
         },
     };
     let caster = DrawItem {
@@ -66,6 +67,7 @@ pub(super) fn checks(gpu: &Gpu) -> Result<()> {
         material: receiver.material.clone(),
     };
     let mut scene = RenderScene {
+        shader_time: 0.,
         particles: Vec::new(),
         fog: Default::default(),
         gi: None,

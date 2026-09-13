@@ -2,6 +2,7 @@ use bozzard_render::*;
 use glam::{Mat4, Vec3};
 fn scene() -> RenderScene {
     RenderScene {
+        shader_time: 0.,
         particles: Vec::new(),
         view_projection: glam::camera::rh::proj::directx::orthographic(-4., 4., -3., 3., 0.1, 30.),
         items: vec![],
@@ -35,6 +36,7 @@ fn quad(x: f32, z: f32, size: [f32; 2], color: [f32; 3]) -> DrawItem {
             texture: TextureKind::White,
             uv_scale: [1.; 2],
             surface_overrides: Default::default(),
+            shader: None,
         },
     }
 }

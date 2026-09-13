@@ -64,7 +64,7 @@ cargo run -p bozzard-editor-app -- --scene examples/demo/scenes/neon-gallery.jso
 
 ## Material effect demo
 
-Open `cargo run -p bozzard-editor-app -- --scene examples/demo/scenes/shader-lab.json` (or use `bozzard-player`). Select a whole object and choose **Texture / material effect** in the Inspector: **World normals**, **Procedural checker**, or **Toon (3 bands)**. Tint colors checker/toon; UV repeat controls checker density (8 cells per repeat); rotating an object changes its world-normal colors. Toon uses the sun direction and shadow visibility, not full PBR/local lighting. Effects replace the texture slot and apply to every surface, including imported models; choose White to restore imported textures. They are view effects, not GI bake materials; the examples opt out of contributing to GI.
+Open `cargo run -p bozzard-editor-app -- --scene examples/demo/scenes/shader-node-lab.json` (or use `bozzard-player`). Select a whole object and choose **Texture / material effect** in the Inspector: **World normals**, **Procedural checker**, or **Toon (3 bands)**. Tint colors checker/toon; UV repeat controls checker density (8 cells per repeat); rotating an object changes its world-normal colors. Toon uses the sun direction and shadow visibility, not full PBR/local lighting. Effects replace the texture slot and apply to every surface, including imported models; choose White to restore imported textures. They are view effects, not GI bake materials; the examples opt out of contributing to GI.
 
 ## First playable demo
 
@@ -163,6 +163,8 @@ Use **Properties → BLUEPRINTS → + New** (or **+ Spin example**) to author ga
 Try `cargo run -p bozzard-editor-app -- --scene examples/demo/scenes/blueprint-lab.json`: select **Hero Cube**, open Blueprint, then Play. In the Scene viewport, Space toggles its visibility while another graph keeps it spinning. See [the no-code workflow, node catalog, and current limits](docs/blueprints.md).
 
 Try `cargo run -p bozzard-editor-app -- --scene examples/demo/scenes/pressure-plate-lab.json` for two independently bound pressure-gate prefab instances. Walk the orange player onto either teal plate to raise its amber door; leaving closes it. The scene also demonstrates **Sensor (Blueprints)** triggers without built-in gameplay effects.
+
+Try `cargo run -p bozzard-editor-app -- --scene examples/demo/scenes/shader-node-lab.json`: select **Pulse Cube**, open **Shader**, and watch its emissive glow breathe on the Scene tab. The **Fade Cube**'s graph cuts its checker texture out via Alpha. See [the node catalog, master-channel semantics, and current limits](docs/shader-editor.md).
 
 ## Prefabs
 

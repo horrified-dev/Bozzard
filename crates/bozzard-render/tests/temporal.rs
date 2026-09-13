@@ -2,6 +2,7 @@ use bozzard_render::*;
 use glam::{Mat4, Vec3};
 fn scene() -> RenderScene {
     RenderScene {
+        shader_time: 0.,
         particles: vec![],
         view_projection: glam::camera::rh::proj::directx::orthographic(-3., 3., -2., 2., 0.1, 30.),
         items: vec![],
@@ -34,6 +35,7 @@ fn item(id: u64, position: Vec3, scale: Vec3, color: [f32; 3]) -> DrawItem {
             texture: TextureKind::White,
             uv_scale: [1.; 2],
             surface_overrides: Default::default(),
+            shader: None,
         },
     }
 }

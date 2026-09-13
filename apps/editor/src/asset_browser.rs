@@ -13,6 +13,7 @@ pub struct AssetBrowser {
     selected_blueprint: Option<std::path::PathBuf>,
     focused: bool,
     pending_delete: Option<PendingDelete>,
+    selected_shader: Option<std::path::PathBuf>,
     show_details: bool,
     thumbnails: HashMap<String, Thumbnail>,
     catalog_revision: u64,
@@ -26,6 +27,7 @@ enum AssetFilter {
     Models,
     Prefabs,
     Blueprints,
+    ShaderGraphs,
 }
 
 struct Thumbnail {
@@ -39,6 +41,9 @@ pub struct AssetBrowserOutput {
     pub blueprint_import_requested: bool,
     pub blueprint_path: Option<std::path::PathBuf>,
     pub blueprint_owner: Option<String>,
+    pub shader_import_requested: bool,
+    pub shader_path: Option<std::path::PathBuf>,
+    pub shader_owner: Option<String>,
     pub prefab_requested: Option<bozzard_editor::PrefabCommand>,
     pub import_requested: bool,
     pub reload_requested: bool,
@@ -199,6 +204,7 @@ impl AssetBrowser {
                     AssetFilter::Models => "Models",
                     AssetFilter::Prefabs => "Prefabs",
                     AssetFilter::Blueprints => "Blueprints",
+                    AssetFilter::ShaderGraphs => "Shader graphs",
                 })
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.filter, AssetFilter::All, "All assets");
@@ -206,6 +212,11 @@ impl AssetBrowser {
                     ui.selectable_value(&mut self.filter, AssetFilter::Models, "Models");
                     ui.selectable_value(&mut self.filter, AssetFilter::Prefabs, "Prefabs");
                     ui.selectable_value(&mut self.filter, AssetFilter::Blueprints, "Blueprints");
+                    ui.selectable_value(
+                        &mut self.filter,
+                        AssetFilter::ShaderGraphs,
+                        "Shader graphs",
+                    );
                 });
             ui.separator();
             if ui
@@ -215,6 +226,8 @@ impl AssetBrowser {
             {
                 if self.filter == AssetFilter::Blueprints {
                     output.blueprint_import_requested = true;
+                } else if self.filter == AssetFilter::ShaderGraphs {
+                    output.shader_import_requested = true;
                 } else {
                     output.import_requested = true;
                 }
@@ -278,7 +291,7 @@ impl AssetBrowser {
             if sidebar {
                 ui.allocate_ui_with_layout(Vec2::new(130.0, available.y), egui::Layout::top_down(egui::Align::Min), |ui| {
                     ui.small("PROJECT");
-                    for (filter, name) in [(AssetFilter::All, "All assets"), (AssetFilter::Images, "Textures"), (AssetFilter::Models, "Models"), (AssetFilter::Prefabs, "Prefabs"), (AssetFilter::Blueprints, "Blueprints")] {
+                    for (filter, name) in [(AssetFilter::All, "All assets"), (AssetFilter::Images, "Textures"), (AssetFilter::Models, "Models"), (AssetFilter::Prefabs, "Prefabs"), (AssetFilter::Blueprints, "Blueprints"), (AssetFilter::ShaderGraphs, "Shader graphs")] {
                         ui.horizontal(|ui| {
                             let (rect, _) = ui.allocate_exact_size(Vec2::new(16.0, 16.0), Sense::hover());
                             draw_folder(ui.painter(), rect);
@@ -301,6 +314,10 @@ impl AssetBrowser {
                         .show(ui, |ui| {
                             if self.filter == AssetFilter::Blueprints {
                                 self.blueprints(ui, editor, &mut output);
+                                return;
+                            }
+                            if self.filter == AssetFilter::ShaderGraphs {
+                                self.shader_graphs(ui, editor, &mut output);
                                 return;
                             }
                             if shown.is_empty() {
@@ -519,6 +536,64 @@ impl AssetBrowser {
                     self.selected_blueprint = None;
                     output.blueprint_owner = Some(object.id.clone());
                 }
+            }
+        }
+    }
+
+    fn shader_graphs(
+        &mut self,
+        ui: &mut egui::Ui,
+        editor: &Editor,
+        output: &mut AssetBrowserOutput,
+    ) {
+        ui.weak("Shader graphs · Select an object, then double-click a file to attach it.");
+        let editing = editor.play.is_none() && editor.selected_object().is_some();
+        let query = self.search.trim().to_lowercase();
+        match shader_paths(&editor.path) {
+            Err(error) => {
+                ui.colored_label(Color32::LIGHT_RED, error.to_string());
+            }
+            Ok(mut paths) => {
+                paths.sort();
+                for path in paths.iter().filter(|p| {
+                    p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+                        n.ends_with(".shadergraph.json") && n.to_lowercase().contains(&query)
+                    })
+                }) {
+                    let name = path.file_name().unwrap().to_string_lossy();
+                    let response = ui
+                        .add_enabled(
+                            editor.play.is_none(),
+                            egui::Button::selectable(
+                                self.selected_shader.as_ref() == Some(path),
+                                format!("◈ {name}"),
+                            ),
+                        )
+                        .on_hover_text(format!(
+                            "{}\nDouble-click to attach a copy to the selected object",
+                            path.display()
+                        ));
+                    if response.clicked() || response.secondary_clicked() {
+                        self.selected_shader = Some(path.clone());
+                    }
+                    if response.double_clicked() && editing {
+                        output.shader_path = Some(path.clone());
+                    }
+                }
+                if paths.is_empty() {
+                    ui.weak("Select an object, use Inspector → SHADER GRAPH → Save graph to create files here.");
+                }
+            }
+        }
+        ui.separator();
+        ui.weak("Graphs attached in this scene");
+        for object in &editor.scene().objects {
+            let Some(graph) = &object.shader_graph else {
+                continue;
+            };
+            let label = format!("{} / {}", object.name, graph.name);
+            if label.to_lowercase().contains(&query) && ui.button(label).clicked() {
+                output.shader_owner = Some(object.id.clone());
             }
         }
     }
@@ -798,6 +873,31 @@ fn blueprint_paths(scene: &std::path::Path) -> std::io::Result<Vec<std::path::Pa
                             .file_name()
                             .to_string_lossy()
                             .ends_with(".blueprint.json")
+                    {
+                        paths.push(entry.path());
+                    }
+                }
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Ok(paths)
+}
+
+fn shader_paths(scene: &std::path::Path) -> std::io::Result<Vec<std::path::PathBuf>> {
+    let assets = bozzard_editor::root(scene).join("assets");
+    let mut paths = Vec::new();
+    for directory in [assets.clone(), assets.join("ShaderGraphs")] {
+        match std::fs::read_dir(directory) {
+            Ok(entries) => {
+                for entry in entries {
+                    let entry = entry?;
+                    if entry.file_type()?.is_file()
+                        && entry
+                            .file_name()
+                            .to_string_lossy()
+                            .ends_with(".shadergraph.json")
                     {
                         paths.push(entry.path());
                     }

@@ -317,6 +317,7 @@ mod tests {
         gpu.require_hardware()?;
         let mut renderer = SceneRenderer::new(&gpu, wgpu::TextureFormat::Rgba8Unorm);
         let mut scene = RenderScene {
+            shader_time: 0.,
             particles: vec![],
             fog: Default::default(),
             gi: None,
@@ -348,6 +349,7 @@ mod tests {
                 uv_scale: [1.; 2],
                 texture: TextureKind::Text,
                 lit: false,
+                shader: None,
             },
         };
         scene.items.push(item.clone());

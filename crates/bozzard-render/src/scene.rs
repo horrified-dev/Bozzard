@@ -57,6 +57,7 @@ pub enum MeshKind {
     Text(TextMesh),
     Quad,
     Cube,
+    Sphere,
     Imported(String),
     ModelPart(String, usize),
 }
@@ -82,6 +83,16 @@ pub struct Material {
     pub uv_scale: [f32; 2],
     pub texture: TextureKind,
     pub lit: bool,
+    /// Compiled shader graph surface override; pipelines are cached by content hash.
+    pub shader: Option<std::sync::Arc<ShaderSource>>,
+}
+
+/// A shader graph compiled to its `graph_material_surface` WGSL function.
+#[derive(Clone, Debug)]
+pub struct ShaderSource {
+    /// Content hash of `surface`; keys the renderer's pipeline cache.
+    pub id: u64,
+    pub surface: String,
 }
 
 #[derive(Clone, Debug)]
@@ -117,6 +128,11 @@ pub struct RenderScene {
     pub lighting: Lighting,
     pub view_projection: Mat4,
     pub items: Vec<DrawItem>,
+    /// Clock for shader graph Time nodes. Simulation time: advances only while
+    /// the simulation runs, so editing never animates materials. Producers
+    /// that preview effects keep `display.time_seconds` for particles and
+    /// atmosphere independent of this.
+    pub shader_time: f32,
 }
 
 /// CPU-side material surface uploaded as part of a static model.
@@ -159,11 +175,19 @@ struct UploadedPart {
 }
 struct PreparedDraw {
     pbr_override: [f32; 2],
+    shader: Option<u64>,
+    pbr: bool,
     object: DrawItem,
     opacity: f32,
     cutoff: f32,
     transparent: bool,
     depth: f32,
+}
+
+/// One shader graph's two host flavors, opaque and transparent each.
+struct GraphPipelines {
+    basic: [wgpu::RenderPipeline; 2],
+    pbr: [wgpu::RenderPipeline; 2],
 }
 struct MeshBuffers {
     bounds: [Vec3; 2],
@@ -201,8 +225,12 @@ pub struct SceneRenderer {
     pipeline: wgpu::RenderPipeline,
     transparent_pipeline: wgpu::RenderPipeline,
     layout: wgpu::BindGroupLayout,
+    /// Shader graph modules by content hash; compiled on first use per frame.
+    graphs: BTreeMap<u64, std::sync::Arc<GraphPipelines>>,
+    neutral_normal: wgpu::TextureView,
     quad: MeshBuffers,
     cube: MeshBuffers,
+    sphere: MeshBuffers,
     white: wgpu::TextureView,
     checker: wgpu::TextureView,
     sampler: wgpu::Sampler,
@@ -221,6 +249,92 @@ pub struct SceneRenderer {
 
 pub(crate) fn float_bytes(values: impl IntoIterator<Item = f32>) -> Vec<u8> {
     values.into_iter().flat_map(f32::to_le_bytes).collect()
+}
+
+/// Full WGSL for one host flavor: shared lighting includes plus the host fragment shader.
+fn host_text(pbr: bool) -> String {
+    format!(
+        "{}\n{}\n{}\n{}\n{}\n{}\n{}",
+        include_str!("scene/environment_sample.wgsl"),
+        include_str!("scene/shadow_sample.wgsl"),
+        include_str!("scene/local_lights.wgsl"),
+        include_str!("scene/gi.wgsl"),
+        include_str!("scene/effects.wgsl"),
+        include_str!("scene/fog.wgsl"),
+        if pbr {
+            include_str!("pbr.wgsl")
+        } else {
+            include_str!("scene.wgsl")
+        },
+    )
+}
+
+/// Splice a graph's `graph_material_surface` over the host's stock call site.
+/// Only fs_main calls it with fragment inputs, so the replacement is unique.
+fn graph_module_text(pbr: bool, source: &ShaderSource) -> String {
+    let host = host_text(pbr).replacen(
+        "default_material_surface(in",
+        "graph_material_surface(in",
+        1,
+    );
+    format!("{host}\n{}", source.surface)
+}
+
+fn scene_pipeline(
+    gpu: &Gpu,
+    label: &str,
+    layout: &wgpu::PipelineLayout,
+    module: &wgpu::ShaderModule,
+    pbr: bool,
+    transparent: bool,
+) -> wgpu::RenderPipeline {
+    let basic_buffers = [Some(wgpu::VertexBufferLayout {
+        array_stride: 32,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2],
+    })];
+    let pbr_buffers = [
+        Some(wgpu::VertexBufferLayout {
+            array_stride: 32,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2],
+        }),
+        Some(wgpu::VertexBufferLayout {
+            array_stride: 48,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &wgpu::vertex_attr_array![3 => Float32x4, 4 => Float32x2, 5 => Float32x2, 6 => Float32x2, 7 => Float32x2],
+        }),
+    ];
+    let buffers: &[Option<wgpu::VertexBufferLayout>] =
+        if pbr { &pbr_buffers } else { &basic_buffers };
+    gpu.device
+        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some(label),
+            layout: Some(layout),
+            vertex: wgpu::VertexState {
+                module,
+                entry_point: Some("vs_main"),
+                compilation_options: Default::default(),
+                buffers,
+            },
+            fragment: Some(wgpu::FragmentState {
+                module,
+                entry_point: Some("fs_main"),
+                compilation_options: Default::default(),
+                targets: &geometry::color_targets(wgpu::TextureFormat::Rgba16Float, transparent),
+            }),
+            primitive: Default::default(),
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: Some(!transparent),
+                depth_compare: Some(wgpu::CompareFunction::Less),
+                stencil: Default::default(),
+                bias: Default::default(),
+            }),
+            multisample: Default::default(),
+            multiview_mask: None,
+            cache: None,
+        })
 }
 
 fn bounds(vertices: &[[f32; 8]], indices: &[u32]) -> [Vec3; 2] {
@@ -256,6 +370,44 @@ fn mesh(gpu: &Gpu, vertices: &[[f32; 8]], indices: &[u32]) -> MeshBuffers {
         count: indices.len() as u32,
         vertex_offset: 0,
     }
+}
+
+/// UV sphere, radius 0.5, cube-compatible vertex layout.
+fn sphere(gpu: &Gpu) -> MeshBuffers {
+    const RINGS: u32 = 24;
+    const SEGMENTS: u32 = 32;
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    for ring in 0..=RINGS {
+        let v = ring as f32 / RINGS as f32;
+        let phi = v * std::f32::consts::PI;
+        for segment in 0..=SEGMENTS {
+            let u = segment as f32 / SEGMENTS as f32;
+            let theta = u * std::f32::consts::TAU;
+            let (sin_phi, cos_phi) = phi.sin_cos();
+            let (sin_theta, cos_theta) = theta.sin_cos();
+            let normal = [sin_phi * cos_theta, cos_phi, sin_phi * sin_theta];
+            vertices.push([
+                normal[0] * 0.5,
+                normal[1] * 0.5,
+                normal[2] * 0.5,
+                normal[0],
+                normal[1],
+                normal[2],
+                u,
+                1. - v,
+            ]);
+        }
+    }
+    let stride = SEGMENTS + 1;
+    for ring in 0..RINGS {
+        for segment in 0..SEGMENTS {
+            let a = ring * stride + segment;
+            let b = a + stride;
+            indices.extend([a, b, a + 1, a + 1, b, b + 1]);
+        }
+    }
+    mesh(gpu, &vertices, &indices)
 }
 
 fn cube(gpu: &Gpu) -> MeshBuffers {
@@ -369,44 +521,93 @@ fn texture(gpu: &Gpu, checker: bool) -> wgpu::TextureView {
     texture.create_view(&Default::default())
 }
 
+/// Neutral tangent-space normal map (flat +Z) for graph texture slots on basic meshes.
+fn neutral_texture(gpu: &Gpu) -> wgpu::TextureView {
+    let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("neutral normal texture"),
+        size: wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8Unorm,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    gpu.queue.write_texture(
+        texture.as_image_copy(),
+        &[128, 128, 255, 255],
+        wgpu::TexelCopyBufferLayout {
+            offset: 0,
+            bytes_per_row: Some(4),
+            rows_per_image: Some(1),
+        },
+        texture.size(),
+    );
+    texture.create_view(&Default::default())
+}
+
 impl SceneRenderer {
     pub fn new(gpu: &Gpu, format: wgpu::TextureFormat) -> Self {
         let output_format = format;
         let environment = environment::Environment::new(gpu);
         let display = display::Display::new(gpu, format);
         let format = wgpu::TextureFormat::Rgba16Float;
+        let mut entries = vec![
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: wgpu::BufferSize::new(496),
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    multisampled: false,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+        ];
+        // Graph texture slots; procedural meshes bind neutral placeholders.
+        for slot in 1..5u32 {
+            entries.push(wgpu::BindGroupLayoutEntry {
+                binding: slot * 2 + 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    multisampled: false,
+                },
+                count: None,
+            });
+            entries.push(wgpu::BindGroupLayoutEntry {
+                binding: slot * 2 + 2,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            });
+        }
         let layout = gpu
             .device
             .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("scene object layout"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new(480),
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            multisampled: false,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
+                entries: &entries,
             });
         let shadows = shadows::Shadows::new(gpu, &layout);
         let pipeline_layout = gpu
@@ -425,33 +626,17 @@ impl SceneRenderer {
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("scene shader"),
-                source: wgpu::ShaderSource::Wgsl(
-                    format!(
-                        "{}\n{}\n{}\n{}\n{}\n{}\n{}",
-                        include_str!("scene/environment_sample.wgsl"),
-                        include_str!("scene/shadow_sample.wgsl"),
-                        include_str!("scene/local_lights.wgsl"),
-                        include_str!("scene/gi.wgsl"),
-                        include_str!("scene/effects.wgsl"),
-                        include_str!("scene/fog.wgsl"),
-                        include_str!("scene.wgsl")
-                    )
-                    .into(),
-                ),
+                source: wgpu::ShaderSource::Wgsl(host_text(false).into()),
             });
         let make_pipeline = |transparent: bool| {
-            gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("scene pipeline"), layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState { module: &shader, entry_point: Some("vs_main"), compilation_options: Default::default(),
-                buffers: &[Some(wgpu::VertexBufferLayout { array_stride: 32, step_mode: wgpu::VertexStepMode::Vertex, attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2] })] },
-            fragment: Some(wgpu::FragmentState { module: &shader, entry_point: Some("fs_main"), compilation_options: Default::default(),
-                targets: &geometry::color_targets(format, transparent) }),
-            primitive: Default::default(),
-            depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: Some(!transparent), depth_compare: Some(wgpu::CompareFunction::Less),
-                stencil: Default::default(), bias: Default::default() }),
-            multisample: Default::default(), multiview_mask: None, cache: None,
-        })
+            scene_pipeline(
+                gpu,
+                "scene pipeline",
+                &pipeline_layout,
+                &shader,
+                false,
+                transparent,
+            )
         };
         let pipeline = make_pipeline(false);
         let transparent_pipeline = make_pipeline(true);
@@ -490,8 +675,11 @@ impl SceneRenderer {
             pipeline,
             transparent_pipeline,
             layout,
+            graphs: BTreeMap::new(),
+            neutral_normal: neutral_texture(gpu),
             quad,
             cube: cube(gpu),
+            sphere: sphere(gpu),
             white: texture(gpu, false),
             checker: texture(gpu, true),
             sampler: gpu.device.create_sampler(&wgpu::SamplerDescriptor {
@@ -523,39 +711,111 @@ impl SceneRenderer {
         }
     }
 
+    /// Compile both host flavors for one shader graph. WGSL errors panic like the
+    /// startup modules; graphs are validated before codegen, so errors are engine bugs.
+    fn compile_graph(&self, gpu: &Gpu, source: &ShaderSource) -> Result<GraphPipelines> {
+        // The basic host leaves group 1 unused, so it keeps an automatic (empty)
+        // layout; the PBR host binds the shared material map group.
+        let layout = |group1: Option<&wgpu::BindGroupLayout>| {
+            gpu.device
+                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("shader graph pipeline layout"),
+                    bind_group_layouts: &[
+                        Some(&self.layout),
+                        group1,
+                        Some(&self.shadows.sample_layout),
+                        Some(&self.environment.layout),
+                    ],
+                    immediate_size: 0,
+                })
+        };
+        let flavor = |pbr: bool| {
+            let pipeline_layout = if pbr {
+                layout(Some(self.pbr.material_layout()))
+            } else {
+                layout(None)
+            };
+            let module = gpu
+                .device
+                .create_shader_module(wgpu::ShaderModuleDescriptor {
+                    label: Some("shader graph module"),
+                    source: wgpu::ShaderSource::Wgsl(graph_module_text(pbr, source).into()),
+                });
+            let name = if pbr { "pbr" } else { "basic" };
+            [
+                scene_pipeline(
+                    gpu,
+                    &format!("shader graph {name} opaque"),
+                    &pipeline_layout,
+                    &module,
+                    pbr,
+                    false,
+                ),
+                scene_pipeline(
+                    gpu,
+                    &format!("shader graph {name} transparent"),
+                    &pipeline_layout,
+                    &module,
+                    pbr,
+                    true,
+                ),
+            ]
+        };
+        Ok(GraphPipelines {
+            basic: flavor(false),
+            pbr: flavor(true),
+        })
+    }
+
     fn object_binding(&self, gpu: &Gpu, key: &TextureKind) -> Result<ObjectBinding> {
         let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("scene object uniform"),
-            size: 480,
+            size: 496,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let bind = |texture: &wgpu::TextureView| {
+            let mut entries = vec![
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(texture),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(
+                        if let TextureKind::ModelPart(id, index) = key {
+                            &self.models[id][*index].sampler
+                        } else if *key == TextureKind::Text {
+                            &self.model_sampler
+                        } else {
+                            &self.sampler
+                        },
+                    ),
+                },
+            ];
+            for slot in 1..5u32 {
+                let view = if slot == 1 {
+                    &self.neutral_normal
+                } else {
+                    &self.white
+                };
+                entries.push(wgpu::BindGroupEntry {
+                    binding: slot * 2 + 1,
+                    resource: wgpu::BindingResource::TextureView(view),
+                });
+                entries.push(wgpu::BindGroupEntry {
+                    binding: slot * 2 + 2,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                });
+            }
             gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("scene object bindings"),
                 layout: &self.layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: buffer.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(texture),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::Sampler(
-                            if let TextureKind::ModelPart(id, index) = key {
-                                &self.models[id][*index].sampler
-                            } else if *key == TextureKind::Text {
-                                &self.model_sampler
-                            } else {
-                                &self.sampler
-                            },
-                        ),
-                    },
-                ],
+                entries: &entries,
             })
         };
         let texture = match key {
@@ -996,13 +1256,16 @@ impl SceneRenderer {
                        cutoff: Option<f32>,
                        translucent: bool,
                        center: Vec3,
-                       pbr_override: [f32; 2]| {
+                       pbr_override: [f32; 2],
+                       pbr: bool| {
             let depth = scene
                 .view_projection
                 .project_point3(object.model.transform_point3(center))
                 .z;
             draws.push(PreparedDraw {
                 pbr_override,
+                pbr,
+                shader: object.material.shader.as_ref().map(|s| s.id),
                 object,
                 opacity,
                 cutoff: cutoff.unwrap_or(0.0),
@@ -1023,6 +1286,7 @@ impl SceneRenderer {
                         true,
                         (mesh.bounds[0] + mesh.bounds[1]) * 0.5,
                         [-1.; 2],
+                        false,
                     );
                 }
                 continue;
@@ -1096,6 +1360,7 @@ impl SceneRenderer {
                         translucent,
                         part.center,
                         factors,
+                        part.shading.is_some(),
                     );
                 }
             } else {
@@ -1110,16 +1375,17 @@ impl SceneRenderer {
                         object.material.metallic.unwrap_or(-1.),
                         object.material.roughness.unwrap_or(-1.),
                     ],
+                    false,
                 );
             }
         }
-        // Opaque first; translucent surfaces back-to-front by projected center.
+        // Opaque first, grouped by shader pipeline; translucent surfaces back-to-front by projected center.
         draws.sort_by(|a, b| {
             a.transparent.cmp(&b.transparent).then_with(|| {
                 if a.transparent {
                     b.depth.total_cmp(&a.depth)
                 } else {
-                    std::cmp::Ordering::Equal
+                    a.shader.cmp(&b.shader).then_with(|| a.pbr.cmp(&b.pbr))
                 }
             })
         });
@@ -1276,6 +1542,20 @@ impl SceneRenderer {
             .write_buffer(&self.shadows.local_lights, 0, &lights);
         self.prepare_text(gpu, scene)?;
         let draws = self.prepare(scene);
+        // Compile shader graph pipelines on first use; retire stale ones after edits.
+        let mut graph_sources: BTreeMap<u64, std::sync::Arc<ShaderSource>> = BTreeMap::new();
+        for draw in &draws {
+            if let Some(shader) = &draw.object.material.shader {
+                graph_sources.insert(shader.id, shader.clone());
+            }
+        }
+        self.graphs.retain(|id, _| graph_sources.contains_key(id));
+        for (id, source) in graph_sources {
+            if !self.graphs.contains_key(&id) {
+                let pipelines = self.compile_graph(gpu, &source)?;
+                self.graphs.insert(id, std::sync::Arc::new(pipelines));
+            }
+        }
         self.objects.truncate(draws.len());
         for (index, draw) in draws.iter().enumerate() {
             let object = &draw.object;
@@ -1363,7 +1643,8 @@ impl SceneRenderer {
                             },
                         ])
                         .chain(scene.fog.uniform(raw))
-                        .chain(previous_mvp.to_cols_array()),
+                        .chain(previous_mvp.to_cols_array())
+                        .chain([scene.shader_time, 0., 0., 0.]),
                 ),
             );
         }
@@ -1457,14 +1738,19 @@ impl SceneRenderer {
                     MeshKind::ModelPart(id, index) => self.models[id][*index].shading.as_ref(),
                     _ => None,
                 };
-                let key = (shading.is_some(), draw.transparent);
+                let key = (shading.is_some(), draw.shader, draw.transparent);
+                let pipeline = match key {
+                    (true, Some(id), false) => &self.graphs[&id].pbr[0],
+                    (true, Some(id), true) => &self.graphs[&id].pbr[1],
+                    (false, Some(id), false) => &self.graphs[&id].basic[0],
+                    (false, Some(id), true) => &self.graphs[&id].basic[1],
+                    (true, None, false) => &self.pbr.opaque,
+                    (true, None, true) => &self.pbr.transparent,
+                    (false, None, false) => &self.pipeline,
+                    (false, None, true) => &self.transparent_pipeline,
+                };
                 if !self.state_caching || last_pipeline != Some(key) {
-                    pass.set_pipeline(match key {
-                        (true, false) => &self.pbr.opaque,
-                        (true, true) => &self.pbr.transparent,
-                        (false, false) => &self.pipeline,
-                        (false, true) => &self.transparent_pipeline,
-                    });
+                    pass.set_pipeline(pipeline);
                     pass.set_bind_group(2, &self.shadows.sample_binding, &[]);
                     pass.set_bind_group(3, &self.environment.binding, &[]);
                     self.stats.pipeline_binds += 1;
@@ -1474,6 +1760,7 @@ impl SceneRenderer {
                     MeshKind::Text(text) => self.text.as_ref().unwrap().mesh(text).unwrap(),
                     MeshKind::Quad => &self.quad,
                     MeshKind::Cube => &self.cube,
+                    MeshKind::Sphere => &self.sphere,
                     MeshKind::Imported(id) => &self.imported_meshes[id],
                     MeshKind::ModelPart(id, index) => &self.models[id][*index].mesh,
                 };

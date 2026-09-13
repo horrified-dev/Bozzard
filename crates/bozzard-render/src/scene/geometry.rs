@@ -130,7 +130,7 @@ impl From<&MeshKind> for MotionMesh {
     fn from(mesh: &MeshKind) -> Self {
         match mesh {
             MeshKind::Quad => Self::Quad,
-            MeshKind::Cube => Self::Cube,
+            MeshKind::Cube | MeshKind::Sphere => Self::Cube,
             MeshKind::Imported(id) => Self::Imported(id.clone()),
             MeshKind::ModelPart(id, part) => Self::ModelPart(id.clone(), *part),
             MeshKind::Text(_) => Self::Text,

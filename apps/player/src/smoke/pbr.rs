@@ -51,6 +51,7 @@ impl Fixture<'_> {
             }],
         )?;
         let scene = RenderScene {
+            shader_time: 0.,
             particles: Vec::new(),
             fog: Default::default(),
             gi: None,
@@ -73,6 +74,7 @@ impl Fixture<'_> {
                     uv_scale: [1.; 2],
                     texture: TextureKind::White,
                     lit: self.lit,
+                    shader: None,
                 },
             }],
         };

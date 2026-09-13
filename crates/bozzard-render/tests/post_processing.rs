@@ -19,11 +19,13 @@ fn object(
             texture: TextureKind::White,
             uv_scale: [1.; 2],
             surface_overrides: Default::default(),
+            shader: None,
         },
     }
 }
 fn scene() -> RenderScene {
     RenderScene {
+        shader_time: 0.,
         particles: Vec::new(),
         fog: Default::default(),
         gi: None,

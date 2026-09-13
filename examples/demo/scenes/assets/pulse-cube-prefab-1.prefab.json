@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "name": "Pulse Cube",
+  "root": "pulse-cube",
+  "objects": [
+    {
+      "shader_graph": {
+        "version": 1,
+        "name": "Pulse Emissive",
+        "nodes": [
+          {
+            "id": 1,
+            "position": [
+              560.0,
+              40.0
+            ],
+            "kind": "master",
+            "inputs": [
+              {
+                "vector": [
+                  0.8,
+                  0.8,
+                  0.8
+                ]
+              },
+              {
+                "float": 0.0
+              },
+              {
+                "float": 0.5
+              },
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              {
+                "float": 1.0
+              },
+              {
+                "vector": [
+                  0.0,
+                  1.0,
+                  0.0
+                ]
+              }
+            ],
+            "slot": "base_color"
+          },
+          {
+            "id": 2,
+            "position": [
+              -92.41952,
+              40.87422
+            ],
+            "kind": "time",
+            "inputs": [],
+            "slot": "base_color"
+          },
+          {
+            "id": 3,
+            "position": [
+              220.0,
+              40.0
+            ],
+            "kind": "sine",
+            "inputs": [
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "base_color"
+          },
+          {
+            "id": 4,
+            "position": [
+              -69.31285,
+              345.89636
+            ],
+            "kind": "append",
+            "inputs": [
+              {
+                "float": 0.6
+              },
+              {
+                "float": 0.15
+              },
+              {
+                "float": 1.0
+              }
+            ],
+            "slot": "base_color"
+          },
+          {
+            "id": 5,
+            "position": [
+              290.6893,
+              346.41217
+            ],
+            "kind": "scale_vector",
+            "inputs": [
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              {
+                "float": 0.5
+              }
+            ],
+            "slot": "base_color"
+          }
+        ],
+        "wires": [
+          {
+            "from": {
+              "node": 2,
+              "port": 0
+            },
+            "to": {
+              "node": 3,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 4,
+              "port": 0
+            },
+            "to": {
+              "node": 5,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 5,
+              "port": 0
+            },
+            "to": {
+              "node": 1,
+              "port": 3
+            }
+          },
+          {
+            "from": {
+              "node": 3,
+              "port": 0
+            },
+            "to": {
+              "node": 5,
+              "port": 1
+            }
+          }
+        ]
+      },
+      "id": "pulse-cube",
+      "name": "Pulse Cube",
+      "transform": {
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "drawable": {
+        "gi_static": true,
+        "layer": "3d",
+        "mesh": "cube",
+        "texture": "white",
+        "color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "uv_scale": [
+          1.0,
+          1.0
+        ]
+      }
+    }
+  ]
+}

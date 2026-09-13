@@ -161,6 +161,7 @@ mod tests {
             display: Default::default(),
             lighting: Default::default(),
             view_projection: Mat4::IDENTITY,
+            shader_time: 0.,
             items: vec![DrawItem {
                 motion_id: 0,
                 model: Mat4::from_translation(Vec3::splat(1000.)),
@@ -182,6 +183,7 @@ mod tests {
                     uv_scale: [1.; 2],
                     texture: TextureKind::Text,
                     lit: false,
+                    shader: None,
                 },
             }],
         };

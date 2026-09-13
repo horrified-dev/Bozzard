@@ -11,9 +11,9 @@ pub use scene::{
     IrradianceVolume, Lighting, LocalLight, LocalShadowSettings, MAX_LOCAL_LIGHTS,
     MAX_SHADOWED_POINT_LIGHTS, MAX_SHADOWED_SPOT_LIGHTS, Material, MeshKind, ModelImage, ModelPart,
     ModelUploadStats, Particle, ParticleKind, PendingUpload, RenderScene, SceneRenderer,
-    ScreenText, SpotShadowSettings, SurfaceMaterialOverride, TextAlignment, TextMesh, TextureKind,
-    ToneMapper, UploadContext, UploadData, UploadProgress, UploadSource, Vignette, VolumetricFog,
-    text_bounds,
+    ScreenText, ShaderSource, SpotShadowSettings, SurfaceMaterialOverride, TextAlignment, TextMesh,
+    TextureKind, ToneMapper, UploadContext, UploadData, UploadProgress, UploadSource, Vignette,
+    VolumetricFog, text_bounds,
 };
 
 use anyhow::{Context, Result, ensure};

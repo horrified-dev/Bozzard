@@ -7,11 +7,21 @@ struct ObjectUniform {
     sun: vec4<f32>, sun_color: vec4<f32>, ambient_color: vec4<f32>,
     surface_factors: vec4<f32>,
     fog_color: vec4<f32>, fog_density: vec4<f32>, fog_height: vec4<f32>,
-    previous_mvp: mat4x4<f32>,
+    previous_mvp: mat4x4<f32>, misc: vec4<f32>, // x = elapsed seconds for shader graphs
 };
 @group(0) @binding(0) var<uniform> object: ObjectUniform;
 @group(0) @binding(1) var color_texture: texture_2d<f32>;
 @group(0) @binding(2) var color_sampler: sampler;
+// Extra material maps; procedural meshes bind neutral placeholders so shader
+// graphs sample the same five slots on every mesh flavor.
+@group(0) @binding(3) var normal_texture: texture_2d<f32>;
+@group(0) @binding(4) var normal_sampler: sampler;
+@group(0) @binding(5) var mr_texture: texture_2d<f32>;
+@group(0) @binding(6) var mr_sampler: sampler;
+@group(0) @binding(7) var ao_texture: texture_2d<f32>;
+@group(0) @binding(8) var ao_sampler: sampler;
+@group(0) @binding(9) var emissive_texture: texture_2d<f32>;
+@group(0) @binding(10) var emissive_sampler: sampler;
 
 struct VertexOutput {
     @location(3) previous:vec4<f32>,
@@ -32,23 +42,41 @@ fn vs_main(@location(0) position: vec3<f32>, @location(1) normal: vec3<f32>, @lo
     return out;
 }
 
+/// Surface parameters shared by stock materials and shader graph modules.
+/// `normal` is the final world-space normal; shader graphs override it directly.
+struct SurfaceParams {
+    base: vec3<f32>, metallic: f32, roughness: f32,
+    emissive: vec3<f32>, alpha: f32, normal: vec3<f32>, ao: f32,
+};
+
+fn default_material_surface(uv: vec2<f32>, normal_uv: vec2<f32>, mr_uv: vec2<f32>, ao_uv: vec2<f32>, emissive_uv: vec2<f32>, world_normal: vec3<f32>, tangent: vec4<f32>, world: vec3<f32>, view: vec3<f32>, front: bool, time: f32) -> SurfaceParams {
+    let texel = textureSample(color_texture, color_sampler, uv);
+    return SurfaceParams(
+        texel.rgb * object.tint.rgb,
+        clamp(object.surface_factors.x, 0.0, 1.0),
+        clamp(select(1.0, object.surface_factors.y, object.surface_factors.y >= 0.0), 0.045, 1.0),
+        vec3<f32>(0.0), texel.a * object.tint.a, world_normal, 1.0,
+    );
+}
+
 @fragment
-fn fs_main(in: VertexOutput) -> SurfaceOutput {
-    let texel = textureSample(color_texture, color_sampler, in.uv);
-    let alpha = texel.a * object.tint.a;
-    if alpha <= 0.00001 || alpha < object.parameters.w { discard; }
-    let base = texel.rgb * object.tint.rgb;
+fn fs_main(in: VertexOutput, @builtin(front_facing) front: bool) -> SurfaceOutput {
+    let ndc = in.position.xy / object.viewport.xy * vec2<f32>(2,-2) + vec2<f32>(-1,1);
+    let near = object.inverse_view_projection * vec4<f32>(ndc, 0, 1);
+    let view = normalize(near.xyz / near.w - in.world);
+    let params = default_material_surface(in.uv, in.uv, in.uv, in.uv, in.uv, normalize(in.normal), vec4<f32>(0.0), in.world, view, front, object.misc.x);
+    if params.alpha <= 0.00001 || params.alpha < object.parameters.w { discard; }
+    let base = params.base;
+    let alpha = params.alpha;
     if object.surface_factors.z > 0.5 {
         let effect = demo_effect(base, in.normal, in.uv, in.world);
         if object.surface_factors.z < 1.5 { return surface_output(vec4<f32>(effect, alpha),in.position,in.previous,in.normal,1.0,vec3<f32>(0),1.0,1.0); }
         return surface_output(vec4<f32>(apply_fog(effect, in.world, in.position.xy), alpha),in.position,in.previous,in.normal,1.0,vec3<f32>(0),1.0,1.0);
     }
     if object.parameters.z>0.5 && (object.surface_factors.y>=0.0 || object.surface_factors.x>=0.0) {
-        let n=normalize(in.normal);
-        let ndc=in.position.xy/object.viewport.xy*vec2<f32>(2,-2)+vec2<f32>(-1,1);
-        let near=object.inverse_view_projection*vec4<f32>(ndc,0,1);
-        let v=normalize(near.xyz/near.w-in.world);
-        let roughness=clamp(select(1.0,object.surface_factors.y,object.surface_factors.y>=0.0),0.045,1.0);let metallic=clamp(object.surface_factors.x,0.0,1.0);
+        let n=params.normal;
+        let v=view;
+        let roughness=params.roughness;let metallic=params.metallic;
         let f0=mix(vec3<f32>(0.04),base,metallic);
         var color=direct_brdf(base,metallic,roughness,n,v,object.sun.xyz)*object.sun.w*object.sun_color.rgb*sun_visibility(in.world,n);
         for(var i=0u;i<u32(local_lights.count.x);i++) {
@@ -59,10 +87,10 @@ fn fs_main(in: VertexOutput) -> SurfaceOutput {
         color+=specular_environment(reflect(-v,n),roughness,max(dot(n,v),0.0001),f0);
         return surface_output(vec4<f32>(apply_fog(min(color,vec3<f32>(60000)),in.world,in.position.xy),alpha),in.position,in.previous,n,roughness,f0,1.0,0.0);
     }
-    let diffuse = local_diffuse(in.world, normalize(in.normal)) + object.sun_color.w * object.ambient_color.rgb + gi_diffuse(in.world,normalize(in.normal))
-        + object.sun_color.rgb * object.sun.w * max(dot(normalize(in.normal), object.sun.xyz), 0.0) / 3.14159265 * sun_visibility(in.world, normalize(in.normal));
+    let diffuse = local_diffuse(in.world, params.normal) + object.sun_color.w * object.ambient_color.rgb + gi_diffuse(in.world,params.normal)
+        + object.sun_color.rgb * object.sun.w * max(dot(params.normal, object.sun.xyz), 0.0) / 3.14159265 * sun_visibility(in.world, params.normal);
     let light = mix(vec3<f32>(1.0), diffuse, object.parameters.z);
-    return surface_output(vec4<f32>(apply_fog(min(base * light, vec3<f32>(60000.0)), in.world, in.position.xy), alpha),in.position,in.previous,in.normal,1.0,vec3<f32>(0),1.0,0.0);
+    return surface_output(vec4<f32>(apply_fog(min(base * light + params.emissive, vec3<f32>(60000.0)), in.world, in.position.xy), alpha),in.position,in.previous,params.normal,1.0,vec3<f32>(0),1.0,0.0);
 }
 
 

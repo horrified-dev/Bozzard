@@ -45,6 +45,7 @@ pub fn extract(
     }
 
     Ok(RenderScene {
+        shader_time: view.display_time,
         particles: bozzard_render_assets::particle_frame(&view.particles),
         fog: bozzard_render::FogSettings {
             enabled: layer == Layer::ThreeD && view.fog.enabled,
@@ -106,43 +107,54 @@ pub fn extract(
             .objects
             .into_iter()
             .zip(view.object_ids)
-            .filter(|((_, d), _)| {
+            .zip(view.shader_graphs)
+            .filter(|(((_, d), _), _)| {
                 !matches!(d.mesh, Mesh::Surface { .. }) || assets.mesh_surface(&d.mesh).is_some()
             })
-            .map(|((model, drawable), motion_id)| DrawItem {
-                motion_id,
-                model,
-                mesh: match drawable.mesh {
-                    Mesh::Quad => MeshKind::Quad,
-                    Mesh::Cube => MeshKind::Cube,
-                    Mesh::Asset(id) => MeshKind::Imported(id),
-                    Mesh::Surface { asset, index, .. } => {
-                        MeshKind::ModelPart(asset, index as usize)
-                    }
+            .map(
+                |(((model, drawable), motion_id), shader)| -> Result<DrawItem> {
+                    Ok(DrawItem {
+                        motion_id,
+                        model,
+                        mesh: match drawable.mesh {
+                            Mesh::Quad => MeshKind::Quad,
+                            Mesh::Cube => MeshKind::Cube,
+                            Mesh::Asset(id) => MeshKind::Imported(id),
+                            Mesh::Surface { asset, index, .. } => {
+                                MeshKind::ModelPart(asset, index as usize)
+                            }
+                        },
+                        material: Material {
+                            metallic: drawable.metallic,
+                            roughness: drawable.roughness,
+                            surface_overrides: drawable
+                                .material_overrides
+                                .into_iter()
+                                .map(|value| bozzard_render::SurfaceMaterialOverride {
+                                    surface: value.surface,
+                                    source: value.source,
+                                    transform: value.transform.matrix(),
+                                    texture: value.texture.map(render_texture),
+                                    uv_scale: value.uv_scale,
+                                    tint: value.tint,
+                                    metallic: value.metallic,
+                                    roughness: value.roughness,
+                                })
+                                .collect(),
+                            tint: drawable.color,
+                            uv_scale: drawable.uv_scale,
+                            texture: render_texture(drawable.texture),
+                            lit: layer == Layer::ThreeD,
+                            shader: shader
+                                .as_deref()
+                                .map(bozzard_render_assets::shader_source)
+                                .transpose()?,
+                        },
+                    })
                 },
-                material: Material {
-                    metallic: drawable.metallic,
-                    roughness: drawable.roughness,
-                    surface_overrides: drawable
-                        .material_overrides
-                        .into_iter()
-                        .map(|value| bozzard_render::SurfaceMaterialOverride {
-                            surface: value.surface,
-                            source: value.source,
-                            transform: value.transform.matrix(),
-                            texture: value.texture.map(render_texture),
-                            uv_scale: value.uv_scale,
-                            tint: value.tint,
-                            metallic: value.metallic,
-                            roughness: value.roughness,
-                        })
-                        .collect(),
-                    tint: drawable.color,
-                    uv_scale: drawable.uv_scale,
-                    texture: render_texture(drawable.texture),
-                    lit: layer == Layer::ThreeD,
-                },
-            })
+            )
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
             .chain(
                 view.texts
                     .into_iter()

@@ -2,6 +2,7 @@ use bozzard_render::*;
 use glam::{Mat4, Vec3};
 fn scene() -> RenderScene {
     RenderScene {
+        shader_time: 0.,
         particles: vec![],
         view_projection: glam::camera::rh::proj::directx::orthographic(-2., 2., -2., 2., 0.1, 20.),
         items: vec![],
@@ -88,6 +89,7 @@ fn lit_particles_soft_depth_trails_ordering_and_resize_budget() -> anyhow::Resul
             texture: TextureKind::White,
             uv_scale: [1.; 2],
             surface_overrides: Default::default(),
+            shader: None,
         },
     }];
     let hidden = capture(&gpu, &mut renderer, &scene, size, false)?;

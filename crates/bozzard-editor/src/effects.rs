@@ -42,7 +42,11 @@ impl EffectsPreview {
         Ok(())
     }
     pub fn render(&self, editor: &Editor, layer: Layer, aspect: f32) -> Result<RenderScene> {
-        extract(&self.demo, &editor.assets, layer, aspect)
+        let mut scene = extract(&self.demo, &editor.assets, layer, aspect)?;
+        // Live preview animates particles and atmosphere, not materials:
+        // shader graph Time only advances in Play.
+        scene.shader_time = 0.;
+        Ok(scene)
     }
 }
 impl Editor {
@@ -116,6 +120,7 @@ impl Editor {
             parent: None,
             material: None,
             blueprints: Vec::new(),
+            shader_graph: None,
             light: None,
             camera: None,
             drawable: None,

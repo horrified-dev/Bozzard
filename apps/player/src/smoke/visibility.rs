@@ -14,9 +14,11 @@ pub(super) fn checks(gpu: &Gpu) -> Result<()> {
             texture: TextureKind::White,
             uv_scale: [1.; 2],
             lit: true,
+            shader: None,
         },
     };
     let scene = RenderScene {
+        shader_time: 0.,
         particles: Vec::new(),
         fog: Default::default(),
         gi: None,
@@ -61,6 +63,7 @@ pub(super) fn checks(gpu: &Gpu) -> Result<()> {
         "batching or shadow counters incorrect"
     );
     let mut shadow_scene = RenderScene {
+        shader_time: 0.,
         particles: Vec::new(),
         fog: Default::default(),
         gi: None,
