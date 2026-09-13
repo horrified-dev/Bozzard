@@ -56,6 +56,7 @@ pub enum MeshKind {
     Text(TextMesh),
     Quad,
     Cube,
+    Sphere,
     Imported(String),
     ModelPart(String, usize),
 }
@@ -220,6 +221,7 @@ pub struct SceneRenderer {
     neutral_normal: wgpu::TextureView,
     quad: MeshBuffers,
     cube: MeshBuffers,
+    sphere: MeshBuffers,
     white: wgpu::TextureView,
     checker: wgpu::TextureView,
     sampler: wgpu::Sampler,
@@ -359,6 +361,44 @@ fn mesh(gpu: &Gpu, vertices: &[[f32; 8]], indices: &[u32]) -> MeshBuffers {
         count: indices.len() as u32,
         vertex_offset: 0,
     }
+}
+
+/// UV sphere, radius 0.5, cube-compatible vertex layout.
+fn sphere(gpu: &Gpu) -> MeshBuffers {
+    const RINGS: u32 = 24;
+    const SEGMENTS: u32 = 32;
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    for ring in 0..=RINGS {
+        let v = ring as f32 / RINGS as f32;
+        let phi = v * std::f32::consts::PI;
+        for segment in 0..=SEGMENTS {
+            let u = segment as f32 / SEGMENTS as f32;
+            let theta = u * std::f32::consts::TAU;
+            let (sin_phi, cos_phi) = phi.sin_cos();
+            let (sin_theta, cos_theta) = theta.sin_cos();
+            let normal = [sin_phi * cos_theta, cos_phi, sin_phi * sin_theta];
+            vertices.push([
+                normal[0] * 0.5,
+                normal[1] * 0.5,
+                normal[2] * 0.5,
+                normal[0],
+                normal[1],
+                normal[2],
+                u,
+                1. - v,
+            ]);
+        }
+    }
+    let stride = SEGMENTS + 1;
+    for ring in 0..RINGS {
+        for segment in 0..SEGMENTS {
+            let a = ring * stride + segment;
+            let b = a + stride;
+            indices.extend([a, b, a + 1, a + 1, b, b + 1]);
+        }
+    }
+    mesh(gpu, &vertices, &indices)
 }
 
 fn cube(gpu: &Gpu) -> MeshBuffers {
@@ -626,6 +666,7 @@ impl SceneRenderer {
             neutral_normal: neutral_texture(gpu),
             quad,
             cube: cube(gpu),
+            sphere: sphere(gpu),
             white: texture(gpu, false),
             checker: texture(gpu, true),
             sampler: gpu.device.create_sampler(&wgpu::SamplerDescriptor {
@@ -1695,6 +1736,7 @@ impl SceneRenderer {
                     MeshKind::Text(text) => self.text.as_ref().unwrap().mesh(text).unwrap(),
                     MeshKind::Quad => &self.quad,
                     MeshKind::Cube => &self.cube,
+                    MeshKind::Sphere => &self.sphere,
                     MeshKind::Imported(id) => &self.imported_meshes[id],
                     MeshKind::ModelPart(id, index) => &self.models[id][*index].mesh,
                 };

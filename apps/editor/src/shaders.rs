@@ -288,15 +288,24 @@ impl App {
     }
 }
 impl App {
-    /// Live material preview: the real renderer draws the selected object
-    /// framed by a fixed orbit camera, with an advancing clock so Time nodes
-    /// animate without pressing Play.
+    /// Live material preview: a preview-only unit sphere carries the graph, so
+    /// the pane shows the shader itself rather than the whole scene. A
+    /// pane-owned clock advances display time so Time nodes animate without
+    /// pressing Play.
     fn shader_preview(&mut self, ui: &mut egui::Ui) -> Result<()> {
         let height = (ui.available_height() * 0.35).clamp(140., 280.);
         let (rect, _) = ui.allocate_exact_size(
             Vec2::new(ui.available_width().max(1.), height),
             Sense::hover(),
         );
+        let Some(graph) = self
+            .editor
+            .selected_object()
+            .and_then(|o| o.shader_graph.clone())
+        else {
+            return Ok(());
+        };
+        let shader = Some(bozzard_render_assets::shader_source(&graph)?);
         let ppp = ui.ctx().pixels_per_point();
         let limit = self.gpu.device.limits().max_texture_dimension_2d.min(4096);
         let size = [
@@ -350,27 +359,50 @@ impl App {
             });
         }
         let aspect = size[0] as f32 / size[1] as f32;
-        let mut scene = self.editor.render(Layer::ThreeD, aspect)?;
         self.preview_time = (self.preview_time + ui.input(|i| i.stable_dt.min(0.05))) % 4096.;
-        scene.display.time_seconds = self.preview_time;
-        let bounds = self.editor.frame_selection_bounds(Layer::ThreeD)?;
-        let [min, max] = bounds.unwrap_or([Vec3::splat(-1.), Vec3::splat(1.)]);
-        let center = (min + max) * 0.5;
-        let radius = ((max - min).length() * 0.5).max(0.5);
-        let eye = center + Vec3::new(1., 0.55, 1.).normalize() * (radius * 2.4 + 0.4);
+        let radius = 0.5_f32;
+        let eye = Vec3::new(1., 0.55, 1.).normalize() * (radius * 2.4 + 0.4);
         let lens = glam::camera::rh::proj::directx::perspective(
             50f32.to_radians(),
             aspect,
             0.05,
             radius * 8. + 20.,
         );
-        scene.view_projection = lens * glam::camera::rh::view::look_at_mat4(eye, center, Vec3::Y);
-        self.residency.advance(
-            &self.gpu,
-            &mut self.renderer,
-            &self.editor.assets,
-            4 * 1024 * 1024,
-        )?;
+        let scene = bozzard_render::RenderScene {
+            particles: Vec::new(),
+            view_projection: lens * glam::camera::rh::view::look_at_mat4(eye, Vec3::ZERO, Vec3::Y),
+            items: vec![bozzard_render::DrawItem {
+                motion_id: 0,
+                mesh: bozzard_render::MeshKind::Sphere,
+                model: glam::Mat4::IDENTITY,
+                material: bozzard_render::Material {
+                    metallic: None,
+                    roughness: None,
+                    tint: [1.; 3],
+                    lit: true,
+                    texture: bozzard_render::TextureKind::White,
+                    uv_scale: [1.; 2],
+                    surface_overrides: Default::default(),
+                    shader,
+                },
+            }],
+            lighting: bozzard_render::Lighting {
+                shadows: false,
+                sun_direction: [-0.45, -0.8, -0.4],
+                sun_intensity: 3.5 * std::f32::consts::PI,
+                ambient_intensity: 0.35,
+                ..Default::default()
+            },
+            lights: Vec::new(),
+            environment: bozzard_render::EnvironmentSettings::disabled(),
+            fog: Default::default(),
+            gi: None,
+            display: bozzard_render::DisplaySettings {
+                tone_mapping: false,
+                time_seconds: self.preview_time,
+                ..Default::default()
+            },
+        };
         let target = self.preview_target.as_ref().unwrap();
         self.renderer.draw(&self.gpu, &target.view, size, &scene)?;
         ui.painter().image(

@@ -110,3 +110,34 @@ fn alpha_graph_discards_pixels() -> anyhow::Result<()> {
     );
     Ok(())
 }
+
+#[test]
+fn sphere_preview_renders_graph_geometry() {
+    // Preview geometry: a base-color graph on the UV sphere, unlit for exact colors.
+    let mut graph = ShaderGraph::default();
+    graph.nodes.push(Node::new(2, NodeKind::Color, [0., 0.]));
+    graph.nodes[1].inputs[0] = Value::Vector([0.9, 0.1, 0.1]);
+    graph
+        .connect(bozzard_scene::shader_graph::Wire {
+            from: bozzard_scene::shader_graph::Socket { node: 2, port: 0 },
+            to: bozzard_scene::shader_graph::Socket { node: 1, port: 0 },
+        })
+        .unwrap();
+    let mut item = item(Some(graph_surface(graph)));
+    item.mesh = bozzard_render::MeshKind::Sphere;
+    let frame = render(vec![item], [48, 36]).expect("sphere render");
+    let center = pixel(&frame, 24, 18);
+    assert!(
+        (226..=232).contains(&center[0])
+            && (22..=28).contains(&center[1])
+            && (22..=28).contains(&center[2]),
+        "expected red sphere at center, got {center:?}"
+    );
+    // Corner stays background: the sphere does not fill the frame.
+    let corner = pixel(&frame, 2, 2);
+    assert_eq!(
+        corner,
+        [5, 6, 10],
+        "expected background at corner, got {corner:?}"
+    );
+}
