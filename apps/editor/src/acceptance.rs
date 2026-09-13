@@ -103,6 +103,63 @@ impl App {
             return;
         };
         self.smoke_frames += 1;
+        if self.smoke_export_started {
+            if self.loading.is_some() {
+                return;
+            }
+            let result = (|| -> Result<()> {
+                ensure!(!self.error, "editor export failed: {}", self.status);
+                ensure!(
+                    self.dialog
+                        .as_ref()
+                        .is_some_and(|d| matches!(d.kind, files::Kind::Exported)),
+                    "export completion did not open its actions dialog"
+                );
+                let folder = output.join("exported-game");
+                let binary = folder.join(if cfg!(target_os = "macos") {
+                    "Game.app/Contents/MacOS/Game"
+                } else if cfg!(windows) {
+                    "Game.exe"
+                } else {
+                    "Game"
+                });
+                let manifest =
+                    bozzard_project::bundled_project(&binary).context("export has no project")?;
+                let (_, source) = bozzard_project::Project::load(&manifest)?;
+                let scene = bozzard_demo::load_document(Some(&source))?;
+                let expected = self
+                    .smoke_expected
+                    .as_ref()
+                    .context("missing export expectation")?;
+                ensure!(
+                    scene.objects == expected.objects && scene.name == expected.name,
+                    "export did not preserve authored edits"
+                );
+                ensure!(
+                    self.editor.scene() == expected && self.editor.play.is_some(),
+                    "export changed the editor document or stopped Play"
+                );
+                ensure!(
+                    bozzard_demo::load_document(Some(&self.editor.path))?.name != expected.name,
+                    "export unexpectedly saved unsaved authoring changes"
+                );
+                println!(
+                    "editor_export_smoke_ok unsaved_authored_changes play_isolation background_export executable_project"
+                );
+                Ok(())
+            })();
+            if let Err(error) = result {
+                eprintln!("editor_smoke_failed: {error:#}");
+            } else {
+                self.smoke_passed.store(true, Ordering::Relaxed);
+                println!(
+                    "editor_smoke_ok authored_commands play_isolation native_ui_capture export"
+                );
+            }
+            self.allow_close = true;
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            return;
+        }
         if self.smoke_frames == 3 {
             let result = (|| -> Result<()> {
                 let original = self.editor.scene().clone();
@@ -785,10 +842,30 @@ impl App {
                             self.smoke_requested = false;
                             continue;
                         }
-                        self.smoke_passed.store(true, Ordering::Relaxed);
-                        println!(
-                            "editor_smoke_ok authored_commands play_isolation collision_response gravity_landing background_save_open queued_imports cancellation native_ui_capture viewport_pixel_oracle"
-                        );
+                        let result = (|| -> Result<()> {
+                            let mut authored = self.editor.scene().clone();
+                            authored.name = "Unsaved export acceptance".into();
+                            self.editor
+                                .apply("Export acceptance edit", authored.clone())?;
+                            self.editor.start_play()?;
+                            self.smoke_expected = Some(authored);
+                            self.start_export(
+                                output.join("exported-game"),
+                                "Editor exported game".into(),
+                            );
+                            ensure!(
+                                self.loading.is_some(),
+                                "export did not start: {}",
+                                self.status
+                            );
+                            self.smoke_export_started = true;
+                            Ok(())
+                        })();
+                        if let Err(error) = result {
+                            eprintln!("editor_smoke_failed: {error:#}");
+                        } else {
+                            return;
+                        }
                     }
                     Err(error) => eprintln!("editor_smoke_failed: {error:#}"),
                 };

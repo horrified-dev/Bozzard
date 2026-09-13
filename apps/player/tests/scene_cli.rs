@@ -152,3 +152,71 @@ fn parallel_tests_reserve_distinct_temporary_directories() {
     assert_eq!(paths.len(), directories.len());
     assert!(directories.iter().all(|d| d.0.is_dir()));
 }
+
+#[test]
+fn exported_executable_finds_its_game_with_no_arguments_or_build_tools() {
+    let dir = Temp::new();
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../examples/demo/first-trail.bozzard.json");
+    let folder = dir.0.join("export");
+    let output = Command::new(env!("CARGO_BIN_EXE_bozzard-player"))
+        .arg("--export-project")
+        .arg(fixture)
+        .arg("--export-dir")
+        .arg(&folder)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let renamed = dir.0.join("Renamed game with spaces");
+    std::fs::rename(folder, &renamed).unwrap();
+    let binary = renamed.join(if cfg!(target_os = "macos") {
+        "Game.app/Contents/MacOS/Game"
+    } else if cfg!(windows) {
+        "Game.exe"
+    } else {
+        "Game"
+    });
+    let empty = dir.0.join("empty");
+    std::fs::create_dir(&empty).unwrap();
+    let output = Command::new(&binary)
+        .arg("--verify-first-trail")
+        .current_dir(&empty)
+        .env("PATH", &empty)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert!(String::from_utf8_lossy(&output.stdout).contains("won=true respawns=0 restart=true"));
+    assert_eq!(std::fs::read_dir(&empty).unwrap().count(), 0);
+    let manifest = bozzard_project::bundled_project(&binary).unwrap();
+    let output = Command::new(&binary)
+        .args(["--project", "bozzard.project.json", "--verify-first-trail"])
+        .current_dir(manifest.parent().unwrap())
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "a bare manifest filename must work: {output:?}"
+    );
+    std::fs::write(&manifest, "{}").unwrap();
+    let output = Command::new(&binary)
+        .arg("--verify-first-trail")
+        .current_dir(&empty)
+        .output()
+        .unwrap();
+    assert!(
+        !output.status.success(),
+        "invalid package must not fall back to embedded demo"
+    );
+    std::fs::remove_file(manifest).unwrap();
+    let output = Command::new(&binary)
+        .arg("--write-scene")
+        .arg(empty.join("must-not-exist.json"))
+        .current_dir(&empty)
+        .output()
+        .unwrap();
+    assert!(
+        !output.status.success(),
+        "missing package manifest must not select the embedded demo"
+    );
+    assert!(!empty.join("must-not-exist.json").exists());
+}

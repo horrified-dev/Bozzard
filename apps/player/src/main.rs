@@ -2,6 +2,7 @@ use anyhow::{Context, Result, bail, ensure};
 mod assets;
 mod gameplay_input;
 mod presentation;
+mod project;
 mod smoke;
 use bozzard_demo::{SceneDemo, load_document, save_document_from};
 use bozzard_render::{Backend, Gpu, SceneRenderer, instance, wgpu};
@@ -22,6 +23,11 @@ use winit::{
 };
 
 struct Options {
+    project: Option<PathBuf>,
+    game_name: Option<String>,
+    export_project: Option<PathBuf>,
+    export_dir: Option<PathBuf>,
+    verify_first_trail: bool,
     backend: Backend,
     software: bool,
     hardware: bool,
@@ -38,6 +44,11 @@ struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
+            project: None,
+            game_name: None,
+            export_project: None,
+            export_dir: None,
+            verify_first_trail: false,
             backend: Backend::native(),
             software: false,
             hardware: false,
@@ -58,6 +69,24 @@ fn options() -> Result<Option<Options>> {
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--project" => {
+                result.project = Some(args.next().context("--project needs a manifest")?.into())
+            }
+            "--export-project" => {
+                result.export_project = Some(
+                    args.next()
+                        .context("--export-project needs a manifest")?
+                        .into(),
+                )
+            }
+            "--export-dir" => {
+                result.export_dir = Some(
+                    args.next()
+                        .context("--export-dir needs a new folder")?
+                        .into(),
+                )
+            }
+            "--verify-first-trail" => result.verify_first_trail = true,
             "--backend" => {
                 result.backend = args.next().context("--backend needs a value")?.parse()?
             }
@@ -97,6 +126,9 @@ fn options() -> Result<Option<Options>> {
             "--output" => result.output = args.next().context("--output needs a directory")?.into(),
             "--help" => {
                 println!(
+                    "--project FILE starts a user game. Exported games find their project beside the executable.\n--export-project FILE --export-dir NEW_FOLDER exports a native game using this player.\n--verify-first-trail checks the reference route without graphics; add --frames 340 to present the route."
+                );
+                println!(
                     "bozzard-player [--backend metal|vulkan|dx12] [--software|--hardware] [--frames N]\nbozzard-player --smoke [--backend ...] [--software|--hardware] [--output DIRECTORY]\n--benchmark-frames N compares reference/culling/cached draws during --smoke --scene.\n--scene FILE loads JSON; --write-scene FILE saves it and exits without a GPU.\n--view 2d|3d chooses the starting view; --save-path FILE sets the F5 destination.\n1/2: 2D/3D. Space: pause. Arrows: pan camera. F5: save. R: reload source. Escape: close.\nPlayer Controller scenes: WASD move, Space jump, right-drag orbit. Progress/win in title; physical R restarts."
                 );
                 return Ok(None);
@@ -120,6 +152,7 @@ fn options() -> Result<Option<Options>> {
         result.benchmark_frames.is_none() || (result.smoke && result.scene.is_some()),
         "--benchmark-frames requires --smoke --scene FILE"
     );
+    project::resolve(&mut result)?;
     Ok(Some(result))
 }
 
@@ -251,6 +284,7 @@ struct Player {
 
 impl Player {
     fn window_title(&self) -> String {
+        let name = self.options.game_name.as_deref().unwrap_or("Bozzard");
         let status = if let Some(error) = &self.command_error {
             format!("ERROR: {error} | ")
         } else {
@@ -258,7 +292,7 @@ impl Player {
         };
         if let Some(state) = self.demo.gameplay() {
             format!(
-                "Bozzard | {status}{} {}/{} | CP: {} | falls: {} | WASD move, Space jump, RMB orbit, physical R restart",
+                "{name} | {status}{} {}/{} | CP: {} | falls: {} | WASD move, Space jump, RMB orbit, physical R restart",
                 if state.won {
                     "YOU WIN!"
                 } else {
@@ -269,9 +303,11 @@ impl Player {
                 state.checkpoint.as_deref().unwrap_or("start"),
                 state.respawns
             )
+        } else if self.options.game_name.is_some() {
+            format!("{name} | {status}Playing | R: restart | Escape: quit")
         } else if self.demo.instance().has_blueprints() {
             format!(
-                "Bozzard | {status}Blueprints running | WASD / Space: input | R: restart | F5: save"
+                "{name} | {status}Blueprints running | WASD / Space: input | R: restart | F5: save"
             )
         } else {
             let layer = if self.options.layer == Layer::TwoD {
@@ -281,7 +317,7 @@ impl Player {
             };
             let state = if self.paused { "paused" } else { "playing" };
             format!(
-                "Bozzard — {status}{layer} / {state} | 1/2: view | Space: pause | Arrows: pan | F5: save | R: reload"
+                "{name} — {status}{layer} / {state} | 1/2: view | Space: pause | Arrows: pan | F5: save | R: reload"
             )
         }
     }
@@ -346,6 +382,12 @@ impl Player {
     }
 
     fn execute_key(&mut self, key: &Key, repeat: bool) -> Result<bool> {
+        if self.options.game_name.is_some()
+            && (matches!(key, Key::Named(NamedKey::F5))
+                || matches!(key, Key::Character(value) if value == "1" || value == "2"))
+        {
+            return Ok(false);
+        }
         match key {
             Key::Named(NamedKey::Space) if !repeat && !self.demo.accepts_gameplay_input() => {
                 self.paused = !self.paused
@@ -488,8 +530,17 @@ impl ApplicationHandler for Player {
         }
         let now = Instant::now();
         if matches!(event, WindowEvent::RedrawRequested) {
-            if !self.paused {
+            if self.options.verify_first_trail {
+                if let Err(error) = project::route_tick(self, self.demo.app.ticks()) {
+                    self.fail(event_loop, error);
+                    return;
+                }
+            } else if !self.paused {
                 self.demo.app.advance(now.duration_since(self.last_frame));
+            }
+            if let Err(error) = self.demo.check_simulation() {
+                self.fail(event_loop, error);
+                return;
             }
             self.last_frame = now;
         }
@@ -564,6 +615,21 @@ fn main() -> Result<()> {
     let Some(options) = options()? else {
         return Ok(());
     };
+    if let Some(manifest) = &options.export_project {
+        let (project, source) = bozzard_project::Project::load(manifest)?;
+        let scene = load_document(Some(&source))?;
+        let destination = bozzard_project::prepare_export(
+            &project,
+            &scene,
+            &source,
+            &std::env::current_exe()?,
+            options.export_dir.as_ref().unwrap(),
+            &Default::default(),
+        )?
+        .commit()?;
+        println!("export_ok path={}", destination.display());
+        return Ok(());
+    }
     if options.smoke {
         return smoke::run(&options);
     }
@@ -592,7 +658,16 @@ fn main() -> Result<()> {
         error: None,
         command_error: None,
     };
-    EventLoop::new()?.run_app(&mut player)?;
+    if player.options.verify_first_trail && player.options.frames.is_none() {
+        for tick in 0..340 {
+            project::route_tick(&mut player, tick)?;
+        }
+    } else {
+        EventLoop::new()?.run_app(&mut player)?;
+    }
+    if player.options.verify_first_trail {
+        project::verify_route(&mut player)?;
+    }
     if let Some(error) = player.error {
         return Err(error);
     }
