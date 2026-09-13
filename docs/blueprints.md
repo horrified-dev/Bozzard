@@ -87,3 +87,5 @@ Fixed action targets and their descendants are excluded from static GI. A graph 
 ### Post-processing actions
 
 **Set Exposure (EV)**, **Set Bloom Intensity**, **Set Saturation**, **Set Heat Strength**, **Set Grain Intensity**, and **Set Vignette Intensity** accept execution plus a numeric Value. They override the current global look after volume blending for this Play session. They do not require a target object. Values are validated before the write; stopping Play discards them. See [post-processing animation](post-processing.md#blueprint-animation).
+
+`End Game` is a terminal execution action with an optional Text message (240 UTF-8 bytes). Enable [Game Flow](game-flow.md) in scene settings to show its retry menu. Remaining graph actions stop when the run ends.

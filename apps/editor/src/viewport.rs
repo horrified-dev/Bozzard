@@ -374,7 +374,7 @@ impl App {
             {
                 ui.colored_label(egui::Color32::YELLOW, hint);
             }
-            ui.small("WASD move · Space jump · Right-drag orbit · Esc stop");
+            ui.small("WASD move · Space jump · Right-drag orbit · Esc pause/stop");
         } else if self.editor.play.is_some() {
             ui.small("WASD move selected collider · Space jump · Esc stop");
         } else if self.fly_latched {
@@ -439,6 +439,76 @@ impl App {
         let available = ui.available_size().max(Vec2::splat(1.0));
         let (rect, response) = ui.allocate_exact_size(available, Sense::click_and_drag());
         self.viewport_rect = Some(rect);
+        if let Some(play) = &mut self.editor.play
+            && let Some(session) = play.game_session()
+        {
+            use bozzard_scene::{GameAction, GameKey, GamePhase};
+            let mut action = None;
+            if !ui.input(|i| i.focused) {
+                action = Some(GameAction::Pause);
+            } else if response.hovered()
+                && !ui.ctx().egui_wants_keyboard_input()
+                && !egui::Popup::is_any_open(ui.ctx())
+            {
+                action = ui.input(|i| {
+                    i.events.iter().find_map(|event| {
+                        if let egui::Event::Key {
+                            key,
+                            pressed: true,
+                            repeat: false,
+                            modifiers,
+                            ..
+                        } = event
+                        {
+                            if modifiers.command || modifiers.ctrl || modifiers.alt {
+                                return None;
+                            }
+                            let key = match key {
+                                egui::Key::Enter => GameKey::Enter,
+                                egui::Key::Escape => GameKey::Escape,
+                                egui::Key::R => GameKey::Restart,
+                                egui::Key::Q => GameKey::Quit,
+                                _ => return None,
+                            };
+                            session.key_action(key)
+                        } else {
+                            None
+                        }
+                    })
+                });
+                if response.clicked()
+                    && let Some(pos) = response.interact_pointer_pos()
+                {
+                    action = session
+                        .hit(
+                            [rect.width(), rect.height()],
+                            [(pos - rect.min).x, (pos - rect.min).y],
+                        )
+                        .or(action);
+                }
+                if ui.input(|i| i.pointer.hover_pos()).is_some_and(|pos| {
+                    session
+                        .hit(
+                            [rect.width(), rect.height()],
+                            [(pos - rect.min).x, (pos - rect.min).y],
+                        )
+                        .is_some()
+                }) {
+                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                }
+            }
+            if let Some(action) = action {
+                self.gameplay_controls.reset();
+                let result = play.game_action(action);
+                let quit = play
+                    .game_session()
+                    .is_some_and(|s| s.phase == GamePhase::Quit);
+                self.result(result);
+                if quit {
+                    self.editor.stop_play();
+                }
+            }
+        }
         if self.editor.play.is_none()
             && self.drag.is_none()
             && !self.mouse_captured
@@ -494,7 +564,7 @@ impl App {
             .editor
             .play
             .as_ref()
-            .is_some_and(|play| play.accepts_gameplay_input());
+            .is_some_and(|play| play.game_session().is_some() || play.accepts_gameplay_input());
         if authored_player {
             let eligible = ui.is_enabled()
                 && (!self.workspace.layer_2d
@@ -655,6 +725,16 @@ impl App {
         } else {
             self.editor.render(self.layer(), aspect)?
         };
+        if let Some(play) = &self.editor.play
+            && let (Some(settings), Some(session)) =
+                (&play.instance().document().game_flow, play.game_session())
+        {
+            scene.items.extend(bozzard_render_assets::game_menu(
+                settings,
+                session,
+                [rect.width(), rect.height()],
+            ));
+        }
         if !self
             .editor
             .assets

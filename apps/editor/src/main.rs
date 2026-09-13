@@ -1047,7 +1047,11 @@ impl App {
             self.begin_hierarchy_rename();
             return;
         }
-        if self.editor.play.is_some()
+        if self
+            .editor
+            .play
+            .as_ref()
+            .is_some_and(|p| p.game_session().is_none())
             && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
         {
             self.gameplay_controls.reset();

@@ -118,9 +118,45 @@ struct SimulationStatus {
 
 pub struct SceneDemo {
     pub app: App,
+    restart_scene: Scene,
+    restart_prefabs: std::collections::BTreeMap<String, bozzard_scene::Prefab>,
 }
 
 impl SceneDemo {
+    pub fn game_session(&self) -> Option<&bozzard_scene::GameSession> {
+        self.app.world.resource::<bozzard_scene::GameSession>()
+    }
+    pub fn game_action(&mut self, action: bozzard_scene::GameAction) -> anyhow::Result<()> {
+        use bozzard_scene::{GameAction as A, GamePhase as P, GameSession};
+        let Some(phase) = self.game_session().map(|s| s.phase) else {
+            return Ok(());
+        };
+        let next = match (phase, action) {
+            (P::Ready, A::Start) | (P::Paused, A::Resume) => P::Playing,
+            (P::Playing, A::Pause) => P::Paused,
+            (P::Playing | P::Paused | P::GameOver, A::Restart) => {
+                let mut next = Self::new(&self.restart_scene)?;
+                next.restart_prefabs = self.restart_prefabs.clone();
+                next.with_instance(|instance, _| -> anyhow::Result<()> {
+                    for (id, prefab) in &self.restart_prefabs {
+                        instance.register_prefab(id.clone(), prefab.clone())?;
+                    }
+                    Ok(())
+                })?;
+                *self = next;
+                P::Playing
+            }
+            (_, A::Quit) => P::Quit,
+            _ => return Ok(()),
+        };
+        self.app
+            .world
+            .resource_mut::<GameSession>()
+            .expect("game session")
+            .phase = next;
+        self.clear_gameplay_input();
+        Ok(())
+    }
     pub fn instance(&self) -> &SceneInstance {
         self.app
             .world
@@ -148,6 +184,10 @@ impl SceneDemo {
     }
     /// Preserve queued edges until a fixed tick; neutral input clears them on focus loss.
     pub fn set_gameplay_input(&mut self, input: GameplayInput) {
+        if !bozzard_scene::game_flow::simulation_running(&self.app.world) {
+            self.clear_gameplay_input();
+            return;
+        }
         let previous = self
             .app
             .world
@@ -180,6 +220,7 @@ impl SceneDemo {
     pub fn new_with_prefabs(document: &Scene, path: Option<&Path>) -> anyhow::Result<Self> {
         let (scene, templates) = prefabs::load(document, path)?;
         let mut demo = Self::new(&scene)?;
+        demo.restart_prefabs = templates.clone();
         demo.with_instance(|instance, _| -> anyhow::Result<()> {
             for (asset, prefab) in templates {
                 instance.register_prefab(asset, prefab)?;
@@ -191,10 +232,15 @@ impl SceneDemo {
     pub fn new(document: &Scene) -> anyhow::Result<Self> {
         let mut app = App::default();
         let instance = document.spawn(&mut app.world)?;
+        if document.game_flow.is_some() {
+            app.world
+                .insert_resource(bozzard_scene::GameSession::default());
+        }
         app.add_system(|world, _, tick| {
-            if world
-                .resource::<SimulationStatus>()
-                .is_some_and(|status| status.error.is_some())
+            if !bozzard_scene::game_flow::simulation_running(world)
+                || world
+                    .resource::<SimulationStatus>()
+                    .is_some_and(|status| status.error.is_some())
             {
                 return;
             }
@@ -223,9 +269,10 @@ impl SceneDemo {
         app.world.insert_resource(SimulationStatus::default());
         app.add_system(move |world, _, tick| {
             // Freeze on simulation failure rather than silently advancing a broken world.
-            if world
-                .resource::<SimulationStatus>()
-                .is_some_and(|status| status.error.is_some())
+            if !bozzard_scene::game_flow::simulation_running(world)
+                || world
+                    .resource::<SimulationStatus>()
+                    .is_some_and(|status| status.error.is_some())
             {
                 return;
             }
@@ -243,7 +290,13 @@ impl SceneDemo {
                 .and_then(|()| gravity_instance.step_gravity(world, dt))
                 .and_then(|()| gravity_instance.gameplay_interactions(world))
                 .and_then(|()| gravity_instance.step_blueprints(world, dt, input))
-                .and_then(|()| gravity_instance.step_particles(world, dt))
+                .and_then(|()| {
+                    if bozzard_scene::game_flow::simulation_running(world) {
+                        gravity_instance.step_particles(world, dt)
+                    } else {
+                        Ok(())
+                    }
+                })
                 .err()
                 .map(|error| format!("{error:#}"));
             world.insert_resource(GameplayInput {
@@ -253,7 +306,11 @@ impl SceneDemo {
             world.insert_resource(gravity_instance);
             world.insert_resource(SimulationStatus { error });
         });
-        Ok(Self { app })
+        Ok(Self {
+            app,
+            restart_scene: document.clone(),
+            restart_prefabs: Default::default(),
+        })
     }
 }
 
