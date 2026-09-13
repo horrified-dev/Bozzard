@@ -730,10 +730,10 @@
             "kind": "append",
             "inputs": [
               {
-                "float": 0.6
+                "float": 1.0
               },
               {
-                "float": 0.15
+                "float": 0.0
               },
               {
                 "float": 1.0
@@ -849,8 +849,8 @@
           {
             "id": 1,
             "position": [
-              560.0,
-              40.0
+              576.8615,
+              -55.72977
             ],
             "kind": "master",
             "inputs": [
@@ -986,6 +986,19 @@
           1.0,
           1.0
         ]
+      },
+      "collider": {
+        "center": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "enabled": true
       }
     },
     {
@@ -1248,6 +1261,978 @@
         "friction": 0.6,
         "restitution": 0.0,
         "angular_damping": 0.1
+      }
+    },
+    {
+      "shader_graph": {
+        "version": 1,
+        "name": "New Shader",
+        "nodes": [
+          {
+            "id": 1,
+            "position": [
+              300.0,
+              40.0
+            ],
+            "kind": "master",
+            "inputs": [
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              {
+                "float": 0.0
+              },
+              {
+                "float": 0.0
+              },
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              {
+                "float": 0.0
+              },
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            ],
+            "slot": "base_color"
+          },
+          {
+            "id": 2,
+            "position": [
+              -11.43586,
+              114.52354
+            ],
+            "kind": "color",
+            "inputs": [
+              {
+                "vector": [
+                  0.670502,
+                  0.021524647,
+                  0.021524647
+                ]
+              }
+            ],
+            "slot": "base_color"
+          }
+        ],
+        "wires": [
+          {
+            "from": {
+              "node": 2,
+              "port": 0
+            },
+            "to": {
+              "node": 1,
+              "port": 0
+            }
+          }
+        ]
+      },
+      "id": "object-1",
+      "name": "Cube",
+      "transform": {
+        "translation": [
+          -3.2327945,
+          1.9897983,
+          -2.4656744
+        ],
+        "rotation_degrees": [
+          -29.691761,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.7285043,
+          0.7285043,
+          0.7285043
+        ]
+      },
+      "drawable": {
+        "gi_static": true,
+        "layer": "3d",
+        "mesh": "cube",
+        "texture": "white",
+        "color": [
+          0.25,
+          0.8,
+          0.7
+        ],
+        "uv_scale": [
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "shader_graph": {
+        "version": 1,
+        "name": "Plasma Core",
+        "nodes": [
+          {
+            "id": 1,
+            "position": [
+              1410.8191,
+              304.8588
+            ],
+            "kind": "master",
+            "inputs": [
+              {
+                "vector": [
+                  0.02,
+                  0.02,
+                  0.03
+                ]
+              },
+              {
+                "float": 0.9
+              },
+              {
+                "float": 0.22
+              },
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              {
+                "float": 1.0
+              },
+              {
+                "vector": [
+                  0.0,
+                  1.0,
+                  0.0
+                ]
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 2,
+            "position": [
+              -760.0,
+              60.0
+            ],
+            "kind": "time",
+            "inputs": [],
+            "slot": "emissive"
+          },
+          {
+            "id": 3,
+            "position": [
+              -760.0,
+              260.0
+            ],
+            "kind": "world_position",
+            "inputs": [],
+            "slot": "emissive"
+          },
+          {
+            "id": 4,
+            "position": [
+              -560.0,
+              260.0
+            ],
+            "kind": "split",
+            "inputs": [
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 5,
+            "position": [
+              -360.0,
+              240.0
+            ],
+            "kind": "multiply",
+            "inputs": [
+              {
+                "float": 20.0
+              },
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 6,
+            "position": [
+              -360.0,
+              80.0
+            ],
+            "kind": "multiply",
+            "inputs": [
+              {
+                "float": 3.0
+              },
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 7,
+            "position": [
+              -160.0,
+              160.0
+            ],
+            "kind": "subtract",
+            "inputs": [
+              {
+                "float": 0.0
+              },
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 8,
+            "position": [
+              40.0,
+              60.0
+            ],
+            "kind": "sine",
+            "inputs": [
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 9,
+            "position": [
+              220.0,
+              60.0
+            ],
+            "kind": "clamp",
+            "inputs": [
+              {
+                "float": 0.0
+              },
+              {
+                "float": 0.0
+              },
+              {
+                "float": 1.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 10,
+            "position": [
+              380.0,
+              40.0
+            ],
+            "kind": "power",
+            "inputs": [
+              {
+                "float": 0.0
+              },
+              {
+                "float": 6.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 11,
+            "position": [
+              40.0,
+              280.0
+            ],
+            "kind": "add",
+            "inputs": [
+              {
+                "float": 0.0
+              },
+              {
+                "float": 2.1
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 12,
+            "position": [
+              220.0,
+              280.0
+            ],
+            "kind": "sine",
+            "inputs": [
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 13,
+            "position": [
+              380.0,
+              280.0
+            ],
+            "kind": "clamp",
+            "inputs": [
+              {
+                "float": 0.0
+              },
+              {
+                "float": 0.0
+              },
+              {
+                "float": 1.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 14,
+            "position": [
+              560.0,
+              40.0
+            ],
+            "kind": "one_minus",
+            "inputs": [
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 15,
+            "position": [
+              560.0,
+              200.0
+            ],
+            "kind": "lerp",
+            "inputs": [
+              {
+                "float": 0.15
+              },
+              {
+                "float": 1.0
+              },
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 16,
+            "position": [
+              720.0,
+              120.0
+            ],
+            "kind": "append",
+            "inputs": [
+              {
+                "float": 0.0
+              },
+              {
+                "float": 0.0
+              },
+              {
+                "float": 0.85
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 17,
+            "position": [
+              900.0,
+              120.0
+            ],
+            "kind": "scale_vector",
+            "inputs": [
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 20,
+            "position": [
+              -760.0,
+              480.0
+            ],
+            "kind": "world_normal",
+            "inputs": [],
+            "slot": "emissive"
+          },
+          {
+            "id": 21,
+            "position": [
+              -760.0,
+              620.0
+            ],
+            "kind": "view_direction",
+            "inputs": [],
+            "slot": "emissive"
+          },
+          {
+            "id": 22,
+            "position": [
+              -560.0,
+              550.0
+            ],
+            "kind": "dot",
+            "inputs": [
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 23,
+            "position": [
+              -360.0,
+              550.0
+            ],
+            "kind": "clamp",
+            "inputs": [
+              {
+                "float": 0.0
+              },
+              {
+                "float": 0.0
+              },
+              {
+                "float": 1.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 24,
+            "position": [
+              -160.0,
+              550.0
+            ],
+            "kind": "one_minus",
+            "inputs": [
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 25,
+            "position": [
+              40.0,
+              550.0
+            ],
+            "kind": "power",
+            "inputs": [
+              {
+                "float": 0.0
+              },
+              {
+                "float": 3.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 26,
+            "position": [
+              380.0,
+              620.0
+            ],
+            "kind": "append",
+            "inputs": [
+              {
+                "float": 1.0
+              },
+              {
+                "float": 0.6
+              },
+              {
+                "float": 0.25
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 27,
+            "position": [
+              560.0,
+              620.0
+            ],
+            "kind": "scale_vector",
+            "inputs": [
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              {
+                "float": 0.0
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 28,
+            "position": [
+              1080.0,
+              380.0
+            ],
+            "kind": "add_vector",
+            "inputs": [
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              {
+                "vector": [
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              }
+            ],
+            "slot": "emissive"
+          },
+          {
+            "id": 30,
+            "position": [
+              1000.0,
+              20.0
+            ],
+            "kind": "color",
+            "inputs": [
+              {
+                "vector": [
+                  0.020000005,
+                  0.02,
+                  0.03
+                ]
+              }
+            ],
+            "slot": "base_color"
+          },
+          {
+            "id": 31,
+            "position": [
+              1000.0,
+              160.0
+            ],
+            "kind": "float",
+            "inputs": [
+              {
+                "float": 0.9
+              }
+            ],
+            "slot": "base_color"
+          },
+          {
+            "id": 32,
+            "position": [
+              1000.0,
+              300.0
+            ],
+            "kind": "float",
+            "inputs": [
+              {
+                "float": 0.22
+              }
+            ],
+            "slot": "base_color"
+          }
+        ],
+        "wires": [
+          {
+            "from": {
+              "node": 3,
+              "port": 0
+            },
+            "to": {
+              "node": 4,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 4,
+              "port": 1
+            },
+            "to": {
+              "node": 5,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 2,
+              "port": 0
+            },
+            "to": {
+              "node": 6,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 5,
+              "port": 0
+            },
+            "to": {
+              "node": 7,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 6,
+              "port": 0
+            },
+            "to": {
+              "node": 7,
+              "port": 1
+            }
+          },
+          {
+            "from": {
+              "node": 7,
+              "port": 0
+            },
+            "to": {
+              "node": 8,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 8,
+              "port": 0
+            },
+            "to": {
+              "node": 9,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 9,
+              "port": 0
+            },
+            "to": {
+              "node": 10,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 7,
+              "port": 0
+            },
+            "to": {
+              "node": 11,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 11,
+              "port": 0
+            },
+            "to": {
+              "node": 12,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 12,
+              "port": 0
+            },
+            "to": {
+              "node": 13,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 9,
+              "port": 0
+            },
+            "to": {
+              "node": 14,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 13,
+              "port": 0
+            },
+            "to": {
+              "node": 15,
+              "port": 2
+            }
+          },
+          {
+            "from": {
+              "node": 14,
+              "port": 0
+            },
+            "to": {
+              "node": 16,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 15,
+              "port": 0
+            },
+            "to": {
+              "node": 16,
+              "port": 1
+            }
+          },
+          {
+            "from": {
+              "node": 16,
+              "port": 0
+            },
+            "to": {
+              "node": 17,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 10,
+              "port": 0
+            },
+            "to": {
+              "node": 17,
+              "port": 1
+            }
+          },
+          {
+            "from": {
+              "node": 20,
+              "port": 0
+            },
+            "to": {
+              "node": 22,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 21,
+              "port": 0
+            },
+            "to": {
+              "node": 22,
+              "port": 1
+            }
+          },
+          {
+            "from": {
+              "node": 22,
+              "port": 0
+            },
+            "to": {
+              "node": 23,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 23,
+              "port": 0
+            },
+            "to": {
+              "node": 24,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 24,
+              "port": 0
+            },
+            "to": {
+              "node": 25,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 26,
+              "port": 0
+            },
+            "to": {
+              "node": 27,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 25,
+              "port": 0
+            },
+            "to": {
+              "node": 27,
+              "port": 1
+            }
+          },
+          {
+            "from": {
+              "node": 17,
+              "port": 0
+            },
+            "to": {
+              "node": 28,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 27,
+              "port": 0
+            },
+            "to": {
+              "node": 28,
+              "port": 1
+            }
+          },
+          {
+            "from": {
+              "node": 28,
+              "port": 0
+            },
+            "to": {
+              "node": 1,
+              "port": 3
+            }
+          },
+          {
+            "from": {
+              "node": 30,
+              "port": 0
+            },
+            "to": {
+              "node": 1,
+              "port": 0
+            }
+          },
+          {
+            "from": {
+              "node": 31,
+              "port": 0
+            },
+            "to": {
+              "node": 1,
+              "port": 1
+            }
+          },
+          {
+            "from": {
+              "node": 32,
+              "port": 0
+            },
+            "to": {
+              "node": 1,
+              "port": 2
+            }
+          }
+        ]
+      },
+      "id": "plasma-cube",
+      "name": "Plasma Cube",
+      "transform": {
+        "translation": [
+          -2.2938428,
+          1.4778395,
+          1.6122942
+        ],
+        "rotation_degrees": [
+          90.0,
+          28.418259,
+          0.0
+        ],
+        "scale": [
+          0.4490696,
+          1.1310111,
+          0.53360224
+        ]
+      },
+      "drawable": {
+        "gi_static": true,
+        "layer": "3d",
+        "mesh": "cube",
+        "texture": "white",
+        "color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "uv_scale": [
+          1.0,
+          1.0
+        ]
       }
     }
   ],
