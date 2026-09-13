@@ -1,9 +1,10 @@
 use bozzard_editor::Editor;
 use bozzard_render_assets::shader_source;
 use bozzard_scene::{Layer, Scene};
+use std::time::Duration;
 
 #[test]
-fn shader_lab_loads_and_codegens_all_graphs() {
+fn shader_lab_loads_and_codegens_all_graphs() -> anyhow::Result<()> {
     let scene = Scene::from_json(include_str!(
         "../../../examples/demo/scenes/shader-node-lab.json"
     ))
@@ -29,17 +30,61 @@ fn shader_lab_loads_and_codegens_all_graphs() {
     let water_graphs: Vec<_> = water
         .objects
         .iter()
-        .filter_map(|o| o.shader_graph.as_ref())
+        .filter_map(|o| o.shader_graph.clone())
         .collect();
     assert_eq!(water_graphs.len(), 1, "water lab embeds the Water graph");
-    let wsource = shader_source(water_graphs[0]).unwrap();
+    let wsource = shader_source(&water_graphs[0]).unwrap();
     // Water drives the surface normal and emissive sparkle; base stays opaque.
     assert!(wsource.surface.contains("params.normal"));
     assert!(wsource.surface.contains("params.emissive"));
     assert!(!wsource.surface.contains("params.alpha ="));
+
+    // Buoy blueprints: in Play the rocks bob on the same wave field the shader
+    // glitters with; base offsets are preserved so they never sink or drift.
+    let rocks: Vec<_> = water
+        .objects
+        .iter()
+        .filter(|o| o.id.starts_with("rock-"))
+        .cloned()
+        .collect();
+    assert_eq!(rocks.len(), 4);
+    let base: Vec<_> = rocks.iter().map(|o| o.transform.translation).collect();
+    let mut editor = Editor::new(
+        water,
+        &std::env::temp_dir().join("bozzard-shader-time-test/water.json"),
+    )?;
+    editor.start_play()?;
+    editor.advance(Duration::from_secs_f32(1.));
+    let play = editor.play.as_ref().unwrap();
+    for (rock, base) in rocks.iter().zip(&base) {
+        let entity = play.instance().entity(&rock.id).unwrap();
+        let t = play
+            .app
+            .world
+            .get::<bozzard_scene::Transform>(entity)
+            .unwrap();
+        assert!(
+            (t.translation[1] - base[1]).abs() < 0.3,
+            "bob amplitude sane"
+        );
+    }
+    editor.advance(Duration::from_secs_f32(0.4));
+    let play = editor.play.as_ref().unwrap();
+    let entity = play.instance().entity(&rocks[0].id).unwrap();
+    let t = play
+        .app
+        .world
+        .get::<bozzard_scene::Transform>(entity)
+        .unwrap();
+    assert!(
+        (t.translation[1] - base[0][1]).abs() > f32::EPSILON,
+        "rock bobbed: {} vs base {}",
+        t.translation[1],
+        base[0][1]
+    );
     // A wave constant accidentally left on a wired input codegens to `* 0.0`,
     // flattening every sine to a constant (ship-stopping: renders uniform).
-    for graph in graphs.iter().chain(water_graphs.iter()) {
+    for graph in graphs.iter().copied().chain(water_graphs.iter()) {
         let code = shader_source(graph).unwrap();
         assert!(
             !code.surface.contains("* 0.0)"),
@@ -60,12 +105,12 @@ fn shader_lab_loads_and_codegens_all_graphs() {
         .clone();
     assert!(fade.contains("params.base ="));
     assert!(fade.contains("params.alpha = clamp"));
+    Ok(())
 }
 
 #[test]
 fn shader_time_follows_simulation_not_edit_preview() -> anyhow::Result<()> {
     use bozzard_scene::shader_graph::{Node, NodeKind, ShaderGraph};
-    use std::time::Duration;
 
     let mut graph = ShaderGraph::default();
     graph.nodes.push(Node::new(2, NodeKind::Time, [40., 40.]));
@@ -75,7 +120,6 @@ fn shader_time_follows_simulation_not_edit_preview() -> anyhow::Result<()> {
     let dir = std::env::temp_dir().join("bozzard-shader-time-test");
     std::fs::create_dir_all(&dir)?;
     let mut editor = Editor::new(scene, &dir.join("scene.json"))?;
-
     // Editing never animates materials.
     assert_eq!(editor.render(Layer::ThreeD, 1.).unwrap().shader_time, 0.);
 
