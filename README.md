@@ -266,3 +266,5 @@ In Edit, use **Frame selected** (**F** over the viewport) to fit an object and i
 For screen-anchored counters and labels, open `examples/demo/scenes/hud-lab.json`. In Play, Space increments its Blueprint-driven HUD counter. See [HUD authoring and dynamic text](docs/text-rendering.md#screen-hud).
 
 Game lifecycle menus and Blueprint End Game: [Game flow](docs/game-flow.md). Try `examples/demo/scenes/game-flow-lab.json`.
+
+Play and export [Flap Woods](docs/flap-woods.md), a complete Blueprint game with HUD scoring, pause, game over and retry.

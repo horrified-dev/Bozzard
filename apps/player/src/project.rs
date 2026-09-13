@@ -16,11 +16,20 @@ pub fn resolve(options: &mut Options) -> Result<()> {
                 && !options.smoke
                 && options.frames.is_none()
                 && options.write_scene.is_none()
-                && !options.verify_first_trail,
+                && !options.verify_first_trail
+                && !options.verify_flap_woods,
             "export is a standalone command"
         );
         return Ok(());
     }
+    ensure!(
+        !options.verify_flap_woods
+            || (!options.verify_first_trail
+                && !options.smoke
+                && options.write_scene.is_none()
+                && options.frames.is_none()),
+        "--verify-flap-woods is a standalone CPU command"
+    );
     ensure!(
         !options.verify_first_trail
             || (!options.smoke

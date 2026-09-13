@@ -26,6 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", type=Path, help="Export a user-game project manifest")
     parser.add_argument("--export-dir", type=Path, help="New output folder for --project")
+    parser.add_argument("--verify-flap-woods", action="store_true", help="Verify the complete Flap Woods game loop in the exported runtime")
     parser.add_argument("--verify-first-trail", action="store_true", help="Verify the First Trail route and restart in the exported runtime")
     parser.add_argument("--profile", choices=["debug", "release"], default="release")
     parser.add_argument("--verify", action="store_true")
@@ -45,8 +46,8 @@ def main():
         from export_game import export_game
         export_game(args, ROOT)
         return
-    if args.export_dir or args.verify_first_trail:
-        parser.error("--export-dir and --verify-first-trail require --project")
+    if args.export_dir or args.verify_first_trail or args.verify_flap_woods:
+        parser.error("--export-dir and route verification require --project")
 
     system = platform.system().lower()
     machine = platform.machine().lower()

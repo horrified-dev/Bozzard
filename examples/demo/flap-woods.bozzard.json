@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "name": "Flap Woods",
+  "start_scene": "scenes/flap-woods.json",
+  "view": "3d"
+}
