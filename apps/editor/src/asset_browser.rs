@@ -496,33 +496,56 @@ impl AssetBrowser {
             }
             Ok(mut paths) => {
                 paths.sort();
-                for path in paths.iter().filter(|p| {
-                    p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
-                        n.ends_with(".blueprint.json") && n.to_lowercase().contains(&query)
+                let shown: Vec<_> = paths
+                    .iter()
+                    .filter(|p| {
+                        p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+                            n.ends_with(".blueprint.json") && n.to_lowercase().contains(&query)
+                        })
                     })
-                }) {
-                    let name = path.file_name().unwrap().to_string_lossy();
-                    let response = ui.add_enabled(editor.play.is_none(), egui::Button::selectable(self.selected_blueprint.as_ref() == Some(path), format!("◇ {name}")))
-                        .on_hover_text(format!("{}\nDouble-click to attach an independent copy · Delete removes the project file", path.display()));
-                    if response.clicked() || response.secondary_clicked() {
-                        self.selected_blueprint = Some(path.clone());
-                    }
-                    if response.double_clicked() && editing {
-                        output.blueprint_path = Some(path.clone());
-                    }
-                    response.context_menu(|ui| {
-                        if ui
-                            .add_enabled(
-                                editor.play.is_none(),
-                                egui::Button::new("Delete from project…"),
-                            )
-                            .clicked()
-                        {
-                            self.request_delete(DeleteTarget::Blueprint(path.clone()), editor);
-                            ui.close();
+                    .collect();
+                let columns = (ui.available_width() / 112.0).floor().max(1.0) as usize;
+                egui::Grid::new("blueprint-grid")
+                    .num_columns(columns)
+                    .spacing(Vec2::new(8.0, 8.0))
+                    .show(ui, |ui| {
+                        for (index, path) in shown.iter().enumerate() {
+                            let response = self.graph_tile(
+                                ui,
+                                path,
+                                "Blueprint",
+                                "◇",
+                                Color32::from_rgb(178, 155, 244),
+                                self.selected_blueprint.as_ref() == Some(*path),
+                            );
+                            if response.clicked() || response.secondary_clicked() {
+                                self.selected_blueprint = Some((*path).clone());
+                            }
+                            if response.double_clicked() && editing {
+                                output.blueprint_path = Some((*path).clone());
+                            }
+                            response
+                                .on_hover_text(format!(
+                                    "{}\nDouble-click to attach an independent copy · Right-click for actions",
+                                    path.display()
+                                ))
+                                .context_menu(|ui| {
+                                    if ui
+                                        .add_enabled(
+                                            editor.play.is_none(),
+                                            egui::Button::new("Delete from project…"),
+                                        )
+                                        .clicked()
+                                    {
+                                        self.request_delete(DeleteTarget::Blueprint((*path).clone()), editor);
+                                        ui.close();
+                                    }
+                                });
+                            if (index + 1) % columns == 0 {
+                                ui.end_row();
+                            }
                         }
                     });
-                }
                 if paths.is_empty() {
                     ui.weak("Save graphs here using Blueprint Editor → Save graph.");
                 }
@@ -556,31 +579,43 @@ impl AssetBrowser {
             }
             Ok(mut paths) => {
                 paths.sort();
-                for path in paths.iter().filter(|p| {
-                    p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
-                        n.ends_with(".shadergraph.json") && n.to_lowercase().contains(&query)
+                let shown: Vec<_> = paths
+                    .iter()
+                    .filter(|p| {
+                        p.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+                            n.ends_with(".shadergraph.json") && n.to_lowercase().contains(&query)
+                        })
                     })
-                }) {
-                    let name = path.file_name().unwrap().to_string_lossy();
-                    let response = ui
-                        .add_enabled(
-                            editor.play.is_none(),
-                            egui::Button::selectable(
-                                self.selected_shader.as_ref() == Some(path),
-                                format!("◈ {name}"),
-                            ),
-                        )
-                        .on_hover_text(format!(
-                            "{}\nDouble-click to attach a copy to the selected object",
-                            path.display()
-                        ));
-                    if response.clicked() || response.secondary_clicked() {
-                        self.selected_shader = Some(path.clone());
-                    }
-                    if response.double_clicked() && editing {
-                        output.shader_path = Some(path.clone());
-                    }
-                }
+                    .collect();
+                let columns = (ui.available_width() / 112.0).floor().max(1.0) as usize;
+                egui::Grid::new("shader-grid")
+                    .num_columns(columns)
+                    .spacing(Vec2::new(8.0, 8.0))
+                    .show(ui, |ui| {
+                        for (index, path) in shown.iter().enumerate() {
+                            let response = self.graph_tile(
+                                ui,
+                                path,
+                                "Shader graph",
+                                "◈",
+                                super::theme::GREEN,
+                                self.selected_shader.as_ref() == Some(*path),
+                            );
+                            if response.clicked() || response.secondary_clicked() {
+                                self.selected_shader = Some((*path).clone());
+                            }
+                            if response.double_clicked() && editing {
+                                output.shader_path = Some((*path).clone());
+                            }
+                            response.on_hover_text(format!(
+                                "{}\nDouble-click to attach a copy to the selected object",
+                                path.display()
+                            ));
+                            if (index + 1) % columns == 0 {
+                                ui.end_row();
+                            }
+                        }
+                    });
                 if paths.is_empty() {
                     ui.weak("Select an object, use Inspector → SHADER GRAPH → Save graph to create files here.");
                 }
@@ -618,6 +653,57 @@ impl AssetBrowser {
                 .and_then(|handle| editor.assets.get(handle))
                 .is_some_and(|entry| entry.revision() == thumbnail.asset_revision)
         });
+    }
+
+    /// Card tile for blueprint / shader-graph files, matching the model and
+    /// prefab tiles' look and interaction (click select, double-click attach).
+    fn graph_tile(
+        &mut self,
+        ui: &mut egui::Ui,
+        path: &std::path::Path,
+        kind: &str,
+        icon: &str,
+        icon_color: Color32,
+        selected: bool,
+    ) -> egui::Response {
+        const TILE: Vec2 = Vec2::new(96.0, 92.0);
+        let file = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let name = file
+            .strip_suffix(".blueprint.json")
+            .or_else(|| file.strip_suffix(".shadergraph.json"))
+            .unwrap_or(file);
+        egui::Frame::new()
+            .inner_margin(4)
+            .corner_radius(2)
+            .stroke(Stroke::new(
+                1.0,
+                if selected {
+                    super::theme::ACCENT
+                } else {
+                    Color32::TRANSPARENT
+                },
+            ))
+            .fill(if selected {
+                Color32::from_rgb(57, 51, 41)
+            } else {
+                Color32::TRANSPARENT
+            })
+            .show(ui, |ui| {
+                ui.set_width(TILE.x);
+                ui.set_min_height(TILE.y);
+                let preview = ui.allocate_exact_size(Vec2::new(TILE.x, 64.0), egui::Sense::click());
+                ui.painter().text(
+                    preview.0.center(),
+                    egui::Align2::CENTER_CENTER,
+                    icon,
+                    egui::FontId::proportional(30.0),
+                    icon_color,
+                );
+                let label = ui.add(egui::Label::new(name).truncate());
+                ui.small(kind);
+                preview.1 | label
+            })
+            .inner
     }
 
     fn tile(
