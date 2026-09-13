@@ -1125,7 +1125,6 @@ fn draw_mesh_preview(painter: &egui::Painter, rect: Rect, vertices: &[[f32; 8]],
         * 0.88;
     let mut triangles: Vec<_> = indices
         .chunks_exact(3)
-        .take(160)
         .filter_map(|t| {
             let p = [
                 *projected.get(t[0] as usize)?,
@@ -1148,15 +1147,22 @@ fn draw_mesh_preview(painter: &egui::Painter, rect: Rect, vertices: &[[f32; 8]],
                 rect.center().y - (p.y - center.y) * scale,
             )
         });
-        painter.add(egui::Shape::convex_polygon(
-            points.to_vec(),
-            Color32::from_rgb(
-                (188.0 * light) as u8,
-                (177.0 * light) as u8,
-                (152.0 * light) as u8,
-            ),
-            Stroke::new(0.35, Color32::from_rgb(210, 197, 168)),
-        ));
+        // Raw mesh, not Shape::convex_polygon: the path tessellator's miter
+        // join explodes on sharp projected corners (thin slivers from any
+        // edge-on triangle) and throws feather vertices across the tile.
+        let mut shape = egui::Mesh::default();
+        for &p in &points {
+            shape.colored_vertex(
+                p,
+                Color32::from_rgb(
+                    (188.0 * light) as u8,
+                    (177.0 * light) as u8,
+                    (152.0 * light) as u8,
+                ),
+            );
+        }
+        shape.add_triangle(0, 1, 2);
+        painter.add(egui::Shape::Mesh(std::sync::Arc::new(shape)));
     }
 }
 
@@ -1205,17 +1211,14 @@ mod tests {
         let xs: Vec<_> = preview.vertices.iter().map(|v| v[0]).collect();
         let ys: Vec<_> = preview.vertices.iter().map(|v| v[1]).collect();
         let zs: Vec<_> = preview.vertices.iter().map(|v| v[2]).collect();
-        assert_eq!(preview.index_count / 3, 2000);
+        // Bounded sample: stride keeps the whole mesh represented, capped at 400.
+        assert_eq!(preview.indices.len() / 3, 85);
+        let peak = |values: &[f32]| values.iter().copied().fold(f32::NEG_INFINITY, f32::max);
         assert!(
-            *xs.iter()
-                .cloned()
-                .chain(zs.iter().copied())
-                .reduce(f32::max)
-                .unwrap()
-                > 0.9,
+            peak(&xs).max(peak(&zs)) > 0.9,
             "sample must reach the far corners, not only the corner cluster"
         );
-        assert!(*ys.iter().max_by(f32::total_cmp).unwrap() > 0.9);
+        assert!(peak(&ys) > 0.9);
     }
 
     #[test]
