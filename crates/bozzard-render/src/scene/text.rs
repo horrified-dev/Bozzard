@@ -287,6 +287,7 @@ mod tests {
         gpu.require_hardware()?;
         let mut renderer = SceneRenderer::new(&gpu, wgpu::TextureFormat::Rgba8Unorm);
         let mut scene = RenderScene {
+            shader_time: 0.,
             particles: vec![],
             fog: Default::default(),
             gi: None,

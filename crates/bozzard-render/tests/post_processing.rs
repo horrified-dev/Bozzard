@@ -25,6 +25,7 @@ fn object(
 }
 fn scene() -> RenderScene {
     RenderScene {
+        shader_time: 0.,
         particles: Vec::new(),
         fog: Default::default(),
         gi: None,

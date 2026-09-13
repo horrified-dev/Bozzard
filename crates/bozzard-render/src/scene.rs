@@ -127,6 +127,11 @@ pub struct RenderScene {
     pub lighting: Lighting,
     pub view_projection: Mat4,
     pub items: Vec<DrawItem>,
+    /// Clock for shader graph Time nodes. Simulation time: advances only while
+    /// the simulation runs, so editing never animates materials. Producers
+    /// that preview effects keep `display.time_seconds` for particles and
+    /// atmosphere independent of this.
+    pub shader_time: f32,
 }
 
 /// CPU-side material surface uploaded as part of a static model.
@@ -1620,7 +1625,7 @@ impl SceneRenderer {
                         ])
                         .chain(scene.fog.uniform(raw))
                         .chain(previous_mvp.to_cols_array())
-                        .chain([scene.display.time_seconds, 0., 0., 0.]),
+                        .chain([scene.shader_time, 0., 0., 0.]),
                 ),
             );
         }

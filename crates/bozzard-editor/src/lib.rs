@@ -979,6 +979,7 @@ pub fn extract(
     }
 
     Ok(RenderScene {
+        shader_time: view.display_time,
         particles: bozzard_render_assets::particle_frame(&view.particles),
         fog: bozzard_render::FogSettings {
             enabled: layer == Layer::ThreeD && view.fog.enabled,

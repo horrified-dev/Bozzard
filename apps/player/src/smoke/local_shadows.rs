@@ -111,6 +111,7 @@ fn checks_for_kind(gpu: &Gpu, output: &Path, point: bool) -> Result<()> {
         material: receiver.material.clone(),
     };
     let mut scene = RenderScene {
+        shader_time: 0.,
         particles: Vec::new(),
         fog: Default::default(),
         gi: None,

@@ -29,7 +29,7 @@ Graph objects are excluded from static GI bakes, like blueprint owners: their li
 
 Texture Sample reads one of the drawable's existing five map slots — Base Color, Normal, Metallic Roughness, Occlusion, or Emissive — with the same samplers and fallbacks as stock materials. Metallic Roughness follows the glTF convention: metallic is blue, roughness is green. All maps sample the Base Color UV set; per-map UV offsets from imported models are not exposed to graphs yet.
 
-Input nodes cover Time (elapsed seconds, from the object uniform), UV, World Normal, World Position, and View Direction. Constant nodes cover Float, Color, and Vector. Float math: Add, Subtract, Multiply, Divide (zero-safe), Power, Sine, Clamp, Lerp, One Minus. Vector math: Add Vectors, Multiply Vectors, Scale Vector, Lerp Vectors, Dot Product, Normalize, Make Vector, Split Vector. Limits match Blueprints: 128 nodes, 512 wires, finite constants, acyclic graphs — validation rejects anything else on load, save, and connect.
+Input nodes cover Time (simulation seconds: it advances only in Play, and the shader preview pane runs its own clock; Effects Live preview animates particles and atmosphere but keeps Time at zero), UV, World Normal, World Position, and View Direction. Constant nodes cover Float, Color, and Vector. Float math: Add, Subtract, Multiply, Divide (zero-safe), Power, Sine, Clamp, Lerp, One Minus. Vector math: Add Vectors, Multiply Vectors, Scale Vector, Lerp Vectors, Dot Product, Normalize, Make Vector, Split Vector. Limits match Blueprints: 128 nodes, 512 wires, finite constants, acyclic graphs — validation rejects anything else on load, save, and connect.
 
 ## Save, reuse, and attach copies
 

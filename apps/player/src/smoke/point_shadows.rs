@@ -55,6 +55,7 @@ pub(super) fn checks(gpu: &Gpu, output: &Path) -> Result<()> {
                 let receiver = origin + forward * 4.;
                 // Large enough to cover seam pixels, small enough to leave a lit edge.
                 let mut scene = RenderScene {
+                    shader_time: 0.,
                     particles: Vec::new(),
                     fog: Default::default(),
                     view_projection: glam::camera::rh::proj::directx::orthographic(
@@ -157,6 +158,7 @@ fn mixed_lights(gpu: &Gpu, renderer: &mut SceneRenderer) -> Result<()> {
         shadows: None,
     };
     let mut scene = RenderScene {
+        shader_time: 0.,
         particles: Vec::new(),
         fog: Default::default(),
         view_projection: glam::camera::rh::proj::directx::orthographic(-2., 2., -2., 2., 0.1, 10.)
