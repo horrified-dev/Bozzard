@@ -183,7 +183,7 @@ impl SceneInstance {
         dt: f32,
         input: GameplayInput,
     ) -> Result<()> {
-        if !self.has_blueprints() {
+        if !crate::game_flow::simulation_running(world) || !self.has_blueprints() {
             return Ok(());
         }
         ensure!(
@@ -291,7 +291,9 @@ impl SceneInstance {
                 .cloned()
                 .collect();
             for object in &owners {
-                if !self.entities.contains_key(&object.id) {
+                if !crate::game_flow::simulation_running(world)
+                    || !self.entities.contains_key(&object.id)
+                {
                     continue;
                 }
                 let overlap = contacts.get(&object.id).unwrap_or(&empty);
@@ -307,7 +309,9 @@ impl SceneInstance {
                         run.variables = graph.variables.clone();
                     }
                     for event in graph.nodes.iter().filter(|n| n.kind.event()) {
-                        if !self.entities.contains_key(&object.id) {
+                        if !crate::game_flow::simulation_running(world)
+                            || !self.entities.contains_key(&object.id)
+                        {
                             break;
                         }
                         let key_index = InputKey::ALL.iter().position(|k| *k == event.key).unwrap();
@@ -346,11 +350,15 @@ impl SceneInstance {
                                 port: 0,
                             }]);
                             while let Some(output) = queue.pop_front() {
-                                if !self.entities.contains_key(&object.id) {
+                                if !crate::game_flow::simulation_running(world)
+                                    || !self.entities.contains_key(&object.id)
+                                {
                                     break;
                                 }
                                 for wire in graph.wires.iter().filter(|w| w.from == output) {
-                                    if !self.entities.contains_key(&object.id) {
+                                    if !crate::game_flow::simulation_running(world)
+                                        || !self.entities.contains_key(&object.id)
+                                    {
                                         break;
                                     }
                                     ensure!(
@@ -442,6 +450,11 @@ impl SceneInstance {
                                                 world.insert(entity, transform)?;
                                                 return Err(error);
                                             }
+                                        }
+                                        K::EndGame => {
+                                            world.resource_mut::<crate::GameSession>()
+                                                .context("End Game needs Game Flow enabled in scene settings")?
+                                                .end_game(value.text()?)?;
                                         }
                                         K::SetText => {
                                             let next = value.text()?;

@@ -428,6 +428,17 @@ impl App {
         let mut fit_gi = false;
         let gi_current = self.editor.gi_current();
         ui.add_enabled_ui(self.editor.play.is_none(), |ui| {
+            egui::CollapsingHeader::new("GAME FLOW").show(ui, |ui| {
+                let mut enabled = scene.game_flow.is_some();
+                if ui.checkbox(&mut enabled, "Start, pause and retry menus").changed() {
+                    scene.game_flow = enabled.then(|| bozzard_scene::GameFlowSettings { title: scene.name.clone(), ..Default::default() });
+                }
+                if let Some(flow) = &mut scene.game_flow {
+                    ui.label("Title"); ui.text_edit_singleline(&mut flow.title);
+                    ui.label("Instructions"); ui.text_edit_multiline(&mut flow.instructions);
+                    ui.small("Enter starts · Escape pauses · R retries · Q quits. Use End Game in a Blueprint to show the retry menu.");
+                }
+            });
             egui::CollapsingHeader::new("GLOBAL ILLUMINATION")
                 .open(if self.smoke_prefab_frame.is_some() {
                     Some(false)

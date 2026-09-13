@@ -121,6 +121,7 @@ pub enum NodeKind {
     JoinText,
     GetText,
     SetText,
+    EndGame,
     Object,
     SelfObject,
     ObjectEqual,
@@ -189,12 +190,13 @@ pub enum NodeKind {
     DestroyPrefab,
 }
 impl NodeKind {
-    pub const ALL: [Self; 70] = [
+    pub const ALL: [Self; 71] = [
         Self::Text,
         Self::NumberToText,
         Self::JoinText,
         Self::GetText,
         Self::SetText,
+        Self::EndGame,
         Self::Object,
         Self::SelfObject,
         Self::ObjectEqual,
@@ -268,6 +270,7 @@ impl NodeKind {
             Self::JoinText => "Join Text",
             Self::GetText => "Get Text",
             Self::SetText => "Set Text",
+            Self::EndGame => "End Game",
             Self::Object => "Object Reference",
             Self::SelfObject => "Self",
             Self::ObjectEqual => "Same Object",
@@ -351,6 +354,7 @@ impl NodeKind {
     pub fn inputs(self) -> &'static [(&'static str, PinType)] {
         use PinType::*;
         match self {
+            Self::EndGame => &[("In", Exec), ("Message", Text)],
             Self::Text => &[("Value", Text)],
             Self::NumberToText => &[("Value", Number), ("Decimals (0–6)", Number)],
             Self::JoinText => &[("A", Text), ("B", Text)],
@@ -415,6 +419,7 @@ impl NodeKind {
         use PinType::*;
         match self {
             Self::Text | Self::NumberToText | Self::JoinText | Self::GetText => &[("Text", Text)],
+            Self::EndGame => &[],
             Self::BodyEnter | Self::BodyExit => &[("Then", Exec), ("Other", Object)],
             Self::SpawnPrefab => &[("Then", Exec), ("Instance", Object)],
             Self::Object | Self::SelfObject => &[("Value", Object)],

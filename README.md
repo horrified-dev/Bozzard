@@ -264,3 +264,5 @@ For trackpads, hover the 3D viewport and press **Tab** to toggle fly mode. Look 
 In Edit, use **Frame selected** (**F** over the viewport) to fit an object and its descendants, or **Frame all** (**Shift+F**) to fit drawable objects in the active layer. Imported mesh geometry and parent transforms are included. Selections without visible geometry center on their origin. Framing retains the 3D viewing direction and works in perspective and orthographic views; **Reset view** restores the authored camera view. It changes editor navigation only, without modifying scene cameras or Undo history. If geometry exceeds the authored camera's depth clipping range, the editor reports this instead of changing that camera.
 
 For screen-anchored counters and labels, open `examples/demo/scenes/hud-lab.json`. In Play, Space increments its Blueprint-driven HUD counter. See [HUD authoring and dynamic text](docs/text-rendering.md#screen-hud).
+
+Game lifecycle menus and Blueprint End Game: [Game flow](docs/game-flow.md). Try `examples/demo/scenes/game-flow-lab.json`.

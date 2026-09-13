@@ -1,5 +1,6 @@
 use anyhow::{Context, Result, bail, ensure};
 mod assets;
+mod game_flow;
 mod gameplay_input;
 mod presentation;
 mod project;
@@ -251,6 +252,19 @@ impl View {
             layer,
             self.config.width as f32 / self.config.height as f32,
         )?;
+        if let (Some(settings), Some(session)) =
+            (&demo.instance().document().game_flow, demo.game_session())
+        {
+            let scale = self.window.scale_factor() as f32;
+            scene.items.extend(bozzard_render_assets::game_menu(
+                settings,
+                session,
+                [
+                    self.config.width as f32 / scale,
+                    self.config.height as f32 / scale,
+                ],
+            ));
+        }
         if !assets.current() {
             scene.gi = None;
         }
@@ -276,6 +290,7 @@ struct Player {
     demo: SceneDemo,
     assets: assets::Assets,
     paused: bool,
+    menu_input: game_flow::MenuInput,
     gameplay_controls: gameplay_input::GameplayControls,
     last_frame: Instant,
     last_present: Instant,
@@ -292,6 +307,9 @@ impl Player {
         } else {
             String::new()
         };
+        if let Some(session) = self.demo.game_session() {
+            return format!("{name} | {status}{:?}", session.phase);
+        }
         if let Some(state) = self.demo.gameplay() {
             format!(
                 "{name} | {status}{} {}/{} | CP: {} | falls: {} | WASD move, Space jump, RMB orbit, physical R restart",
@@ -333,6 +351,9 @@ impl Player {
         repeat: bool,
         synthetic: bool,
     ) -> Result<()> {
+        if self.game_key(physical, state, repeat, synthetic)? {
+            return Ok(());
+        }
         if self.demo.accepts_gameplay_input() {
             if !synthetic && let PhysicalKey::Code(code) = physical {
                 let input =
@@ -506,6 +527,10 @@ impl ApplicationHandler for Player {
         if self.view.as_ref().is_none_or(|v| id != v.window.id()) {
             return;
         }
+        if let Err(error) = self.game_pointer_event(&event) {
+            self.fail(event_loop, error);
+            return;
+        }
         if self.demo.accepts_gameplay_input() {
             if let Some(input) = self.gameplay_controls.event(&event)
                 && (self.options.layer == Layer::ThreeD || self.demo.instance().has_blueprints())
@@ -529,6 +554,14 @@ impl ApplicationHandler for Player {
             )
         {
             eprintln!("scene command failed: {error:#}");
+        }
+        if self
+            .demo
+            .game_session()
+            .is_some_and(|s| s.phase == bozzard_scene::GamePhase::Quit)
+        {
+            event_loop.exit();
+            return;
         }
         let now = Instant::now();
         if matches!(event, WindowEvent::RedrawRequested) {
@@ -554,7 +587,8 @@ impl ApplicationHandler for Player {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::KeyboardInput { event, .. }
-                if event.state == ElementState::Pressed
+                if self.demo.game_session().is_none()
+                    && event.state == ElementState::Pressed
                     && event.logical_key == Key::Named(NamedKey::Escape) =>
             {
                 event_loop.exit()
@@ -653,6 +687,7 @@ fn main() -> Result<()> {
         view: None,
         demo,
         paused: false,
+        menu_input: Default::default(),
         gameplay_controls: gameplay_input::GameplayControls::default(),
         last_frame: Instant::now(),
         last_present: Instant::now(),
@@ -698,6 +733,7 @@ mod controls_tests {
             view: None,
             demo: SceneDemo::new(&document).unwrap(),
             paused: false,
+            menu_input: Default::default(),
             gameplay_controls: gameplay_input::GameplayControls::default(),
             last_frame: Instant::now(),
             last_present: Instant::now(),
@@ -707,6 +743,75 @@ mod controls_tests {
         }
     }
 
+    #[test]
+    fn game_menu_keys_do_not_repeat_or_leak_into_gameplay() {
+        use bozzard_scene::{GamePhase as P, TextRendering};
+        let mut player = authored_player();
+        let scene = Scene::from_json(include_str!(
+            "../../../examples/demo/scenes/game-flow-lab.json"
+        ))
+        .unwrap();
+        player.demo = SceneDemo::new(&scene).unwrap();
+        player.gameplay_controls.event(&WindowEvent::Focused(true));
+        let key = |player: &mut Player, code, repeat, synthetic| {
+            player
+                .dispatch_keyboard(
+                    PhysicalKey::Code(code),
+                    &Key::Character("ignored".into()),
+                    ElementState::Pressed,
+                    repeat,
+                    synthetic,
+                )
+                .unwrap();
+        };
+        key(&mut player, KeyCode::Enter, true, false);
+        key(&mut player, KeyCode::Enter, false, true);
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Ready);
+        key(&mut player, KeyCode::Space, false, false);
+        key(&mut player, KeyCode::Enter, false, false);
+        player.demo.app.step();
+        let counter = player.demo.instance().entity("counter").unwrap();
+        assert_eq!(
+            player
+                .demo
+                .app
+                .world
+                .get::<TextRendering>(counter)
+                .unwrap()
+                .text,
+            "Taps: 0"
+        );
+        key(&mut player, KeyCode::Escape, false, false);
+        key(&mut player, KeyCode::Escape, true, false);
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Paused);
+        key(&mut player, KeyCode::Space, false, false);
+        key(&mut player, KeyCode::Enter, false, false);
+        player.demo.app.step();
+        assert_eq!(
+            player
+                .demo
+                .app
+                .world
+                .get::<TextRendering>(counter)
+                .unwrap()
+                .text,
+            "Taps: 0"
+        );
+        for _ in 0..3 {
+            key(&mut player, KeyCode::Space, false, false);
+            player.demo.app.step();
+        }
+        player.demo.check_simulation().unwrap();
+        assert_eq!(player.demo.game_session().unwrap().phase, P::GameOver);
+        key(&mut player, KeyCode::Enter, false, false);
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Playing);
+        player
+            .game_pointer_event(&WindowEvent::Focused(false))
+            .unwrap();
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Paused);
+        key(&mut player, KeyCode::KeyQ, false, false);
+        assert_eq!(player.demo.game_session().unwrap().phase, P::Quit);
+    }
     #[test]
     fn blueprint_input_without_player_controller_toggles_rendered_mesh() {
         let mut player = authored_player();
@@ -972,6 +1077,7 @@ mod controls_tests {
             view: None,
             demo: SceneDemo::new(&bozzard_demo::scene_document().unwrap()).unwrap(),
             paused: false,
+            menu_input: Default::default(),
             gameplay_controls: gameplay_input::GameplayControls::default(),
             last_frame: Instant::now(),
             last_present: Instant::now(),

@@ -64,6 +64,7 @@ impl Prefab {
 
 fn document(objects: Vec<Object>, assets: BTreeMap<String, AssetSource>) -> Scene {
     Scene {
+        game_flow: None,
         version: SCENE_VERSION,
         name: "Prefab".into(),
         objects,

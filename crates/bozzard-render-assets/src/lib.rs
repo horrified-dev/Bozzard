@@ -1,6 +1,9 @@
 //! Shared asset-to-renderer adapter used by the editor and standalone player.
 //! Neither the CPU importer nor the renderer depends on this bridge.
+mod game_flow;
 mod residency;
+pub use game_flow::game_menu;
+
 use bozzard_assets::{
     AssetData, Filter, ImageData, MeshData, Sampler, SurfaceShading, TextureMap, Wrap,
 };
