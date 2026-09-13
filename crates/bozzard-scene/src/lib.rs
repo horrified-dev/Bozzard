@@ -3,7 +3,7 @@
 mod gi;
 pub use gi::{BakedGi, GI_PROBE_STRIDE, GI_VISIBILITY_SIZE, GiSettings, GiVolumeSettings};
 mod text;
-pub use text::{TextAlignment, TextFont, TextRendering};
+pub use text::{ScreenText, TextAlignment, TextFont, TextRendering};
 mod surface;
 pub use surface::SurfaceMaterialOverride;
 pub mod blueprint;

@@ -13,8 +13,24 @@ pub enum TextAlignment {
     Right,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ScreenText {
+    pub anchor: [f32; 2],
+    pub offset: [f32; 2],
+}
+impl ScreenText {
+    pub fn matrix(self, size: [u32; 2], scale: f32) -> Mat4 {
+        let [w, h] = size.map(|v| v as f32 / scale);
+        Mat4::from_translation(Vec3::new(
+            2. * (self.anchor[0] + self.offset[0] / w) - 1.,
+            1. - 2. * (self.anchor[1] + self.offset[1] / h),
+            0.,
+        )) * Mat4::from_scale(Vec3::new(2. / w, 2. / h, 1.))
+    }
+}
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextMesh {
+    pub screen: Option<ScreenText>,
     pub text: String,
     pub font_size: f32,
     pub max_width: Option<f32>,
@@ -25,6 +41,7 @@ pub struct TextMesh {
 impl Default for TextMesh {
     fn default() -> Self {
         Self {
+            screen: None,
             text: "Text".into(),
             font_size: 0.5,
             max_width: None,
@@ -46,6 +63,19 @@ impl TextMesh {
         )
     }
     fn validate(&self) -> Result<()> {
+        if let Some(screen) = self.screen {
+            ensure!(
+                screen
+                    .anchor
+                    .iter()
+                    .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+                    && screen
+                        .offset
+                        .iter()
+                        .all(|v| v.is_finite() && v.abs() <= 10000.),
+                "invalid HUD position"
+            );
+        }
         ensure!(self.text.len() <= 4096, "text exceeds 4096 UTF-8 bytes");
         ensure!(
             self.font_size.is_finite() && (0.001..=1000.).contains(&self.font_size),

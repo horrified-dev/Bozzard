@@ -42,6 +42,7 @@ impl Editor {
             }
             if let Some(text) = &object.text_rendering
                 && text.enabled
+                && text.screen.is_none()
                 && text.layer == layer
                 && let Some([min, max]) =
                     bozzard_render::text_bounds(&bozzard_render_assets::text_mesh(text))?

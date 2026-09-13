@@ -829,6 +829,7 @@ impl App {
         }
         let projection = scene.view_projection;
         let target = self.target.as_ref().unwrap();
+        self.renderer.set_hud_scale(ppp);
         self.renderer.draw(&self.gpu, &target.view, size, &scene)?;
         ui.painter().image(
             target.id,
@@ -931,7 +932,8 @@ impl App {
                 .filter(|e| matches!(e.data(), Some(bozzard_assets::AssetData::Mesh(_))))
                 .all(|e| self.residency.is_current(&self.editor.assets, &e.id));
             if current {
-                let pick = if let Some(object) = light_pick {
+                let hud = self.editor.pick_hud(self.layer(), size, ppp, ndc)?;
+                let pick = if let Some(object) = hud.or(light_pick) {
                     Some(bozzard_editor::Pick {
                         object,
                         surface: None,
@@ -982,6 +984,13 @@ impl App {
         let Some(object) = self.editor.selected_object().cloned() else {
             return Ok(false);
         };
+        if object
+            .text_rendering
+            .as_ref()
+            .is_some_and(|t| t.screen.is_some())
+        {
+            return Ok(false);
+        }
         let surface = self.editor.selected_surface().map(|s| s.index);
         if surface.is_some() && !self.surface_graphics_ready() {
             return Ok(false);

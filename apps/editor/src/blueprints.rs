@@ -517,6 +517,7 @@ fn pin(node: &Node, port: usize, output: bool) -> Pos2 {
 }
 fn color(kind: PinType) -> Color32 {
     match kind {
+        PinType::Text => Color32::from_rgb(236, 157, 82),
         PinType::Exec => Color32::from_rgb(220, 220, 220),
         PinType::Number => Color32::from_rgb(132, 206, 71),
         PinType::Bool => Color32::from_rgb(210, 73, 91),
@@ -748,6 +749,13 @@ impl BlueprintPane {
                                             .id_salt((port, "value"))
                                             .max_rect(input_rect),
                                         |ui| match &mut node.inputs[port] {
+                                            Value::Text(v) => {
+                                                ui.add(
+                                                    egui::TextEdit::singleline(v)
+                                                        .desired_width(110.)
+                                                        .char_limit(4096),
+                                                );
+                                            }
                                             Value::Number(v) => {
                                                 ui.add_sized(
                                                     [100., 20.],
