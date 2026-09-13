@@ -686,13 +686,21 @@ impl AssetBrowser {
                 Color32::TRANSPARENT
             })
             .show(ui, |ui| {
-                ui.set_width(TILE.x);
-                ui.set_min_height(TILE.y);
-                let preview = ui.allocate_exact_size(Vec2::new(TILE.x, 64.0), egui::Sense::click());
-                draw_node_graph_icon(&ui.painter_at(preview.0), preview.0, icon_color);
-                let label = ui.add(egui::Label::new(name).truncate());
-                ui.small(kind);
-                preview.1 | label
+                ui.vertical(|ui| {
+                    ui.set_width(TILE.x);
+                    ui.set_min_height(TILE.y);
+                    let preview =
+                        ui.allocate_exact_size(Vec2::new(TILE.x, 64.0), egui::Sense::click());
+                    let icon_painter = ui.painter_at(preview.0);
+                    icon_painter.rect_filled(preview.0, 2.0, Color32::from_gray(25));
+                    draw_node_graph_icon(&icon_painter, preview.0, icon_color);
+                    let name = ui
+                        .add(egui::Button::selectable(selected, name).truncate())
+                        .on_hover_text(file);
+                    ui.small(kind);
+                    preview.1 | name
+                })
+                .inner
             })
             .inner
     }
