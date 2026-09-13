@@ -223,6 +223,8 @@ impl View {
             self.surface_status = "window has zero size";
             return Ok(false);
         }
+        self.renderer
+            .set_hud_scale(self.window.scale_factor() as f32);
         assets.poll(&self.gpu, &mut self.renderer)?;
         let (frame, reconfigure) = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(frame) => (frame, false),

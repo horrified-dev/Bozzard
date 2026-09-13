@@ -10,8 +10,9 @@ mod particles;
 mod reflections;
 mod temporal;
 pub use particles::{Particle, ParticleKind};
+mod hud;
 mod text;
-pub use text::{TextAlignment, TextMesh, text_bounds};
+pub use text::{ScreenText, TextAlignment, TextMesh, text_bounds};
 mod visibility;
 pub use visibility::FrameStats;
 mod fog;
@@ -184,6 +185,9 @@ struct DepthTarget {
 /// Indexed geometry, per-object matrices/materials, sampled textures, and depth testing.
 /// HDR opaque/transparent passes. Imported color images are sRGB; procedural colors are linear.
 pub struct SceneRenderer {
+    hud: Option<hud::HudRenderer>,
+    output_format: wgpu::TextureFormat,
+    hud_scale: f32,
     geometry: Option<geometry::GeometryBuffers>,
     motion_history: geometry::MotionHistory,
     particles: Option<particles::Particles>,
@@ -367,6 +371,7 @@ fn texture(gpu: &Gpu, checker: bool) -> wgpu::TextureView {
 
 impl SceneRenderer {
     pub fn new(gpu: &Gpu, format: wgpu::TextureFormat) -> Self {
+        let output_format = format;
         let environment = environment::Environment::new(gpu);
         let display = display::Display::new(gpu, format);
         let format = wgpu::TextureFormat::Rgba16Float;
@@ -468,6 +473,9 @@ impl SceneRenderer {
             &[0, 1, 2, 0, 2, 3],
         );
         Self {
+            hud: None,
+            output_format,
+            hud_scale: 1.,
             geometry: None,
             motion_history: Default::default(),
             particles: None,
@@ -1004,6 +1012,9 @@ impl SceneRenderer {
         };
         for object in &scene.items {
             if let MeshKind::Text(text) = &object.mesh {
+                if text.screen.is_some() {
+                    continue;
+                }
                 if let Some(mesh) = self.text.as_ref().and_then(|t| t.mesh(text)) {
                     add(
                         object.clone(),
@@ -1113,6 +1124,14 @@ impl SceneRenderer {
             })
         });
         draws
+    }
+    /// Logical-to-physical pixel scale for HUD text; world rendering is unchanged.
+    pub fn set_hud_scale(&mut self, scale: f32) {
+        self.hud_scale = if scale.is_finite() {
+            scale.clamp(0.25, 8.)
+        } else {
+            1.
+        };
     }
     pub fn draw(
         &mut self,
@@ -1483,6 +1502,27 @@ impl SceneRenderer {
             Some(&self.shadows.sample_binding),
             Some(&self.environment.binding),
         );
+        if scene
+            .items
+            .iter()
+            .any(|i| matches!(&i.mesh, MeshKind::Text(t) if t.screen.is_some()))
+        {
+            let hud = self
+                .hud
+                .get_or_insert_with(|| hud::HudRenderer::new(gpu, self.output_format));
+            hud.draw(
+                gpu,
+                &mut encoder,
+                target,
+                size,
+                scene,
+                self.text.as_ref().unwrap(),
+                raw,
+                self.hud_scale,
+            )?;
+        } else {
+            self.hud = None;
+        }
         let commands = encoder.finish();
         self.stats.encode_ms = encode_started.elapsed().as_secs_f64() * 1000.;
         let submit_started = std::time::Instant::now();

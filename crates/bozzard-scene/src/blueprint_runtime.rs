@@ -62,7 +62,30 @@ impl Eval<'_> {
             .map(|p| self.input(n, p))
             .collect::<Result<_>>()?;
         let value = match n.kind {
-            K::Number | K::Boolean | K::Vector | K::Object => v[0].clone(),
+            K::Text | K::Number | K::Boolean | K::Vector | K::Object => v[0].clone(),
+            K::NumberToText => {
+                let decimals = v[1].number()?;
+                ensure!(
+                    (0.0..=6.0).contains(&decimals) && decimals.fract() == 0.,
+                    "text decimals must be an integer in 0..6"
+                );
+                Value::Text(format!("{:.*}", decimals as usize, v[0].number()?))
+            }
+            K::JoinText => Value::Text(format!("{}{}", v[0].text()?, v[1].text()?)),
+            K::GetText => {
+                let id = reference_id(v[0].object()?, self.owner).context("text target is None")?;
+                let entity = self
+                    .entities
+                    .get(id)
+                    .context("text target does not exist")?;
+                Value::Text(
+                    self.world
+                        .get::<TextRendering>(*entity)
+                        .context("Get Text needs Text Rendering")?
+                        .text
+                        .clone(),
+                )
+            }
             K::SelfObject => Value::Object(ObjectRef::Id(self.owner.into())),
             K::BodyEnter | K::BodyExit if socket.port == 1 => Value::Object(
                 self.other
@@ -127,7 +150,7 @@ impl Eval<'_> {
             }
             _ => anyhow::bail!("node {id} has no data output"),
         };
-        ensure!(value.valid(), "non-finite output at node {id}");
+        ensure!(value.valid(), "invalid or oversized output at node {id}");
         self.cache.insert(socket, value.clone());
         Ok(value)
     }
@@ -419,6 +442,17 @@ impl SceneInstance {
                                                 world.insert(entity, transform)?;
                                                 return Err(error);
                                             }
+                                        }
+                                        K::SetText => {
+                                            let next = value.text()?;
+                                            ensure!(
+                                                next.len() <= 4096,
+                                                "text exceeds 4096 UTF-8 bytes"
+                                            );
+                                            world
+                                                .get_mut::<TextRendering>(entity)
+                                                .context("Set Text needs Text Rendering")?
+                                                .text = next.into();
                                         }
                                         K::SetColor => {
                                             let color = value.vector()?;

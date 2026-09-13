@@ -18,16 +18,52 @@ pub enum TextAlignment {
     Right,
 }
 
+/// Screen coordinates use a normalized anchor (0,0 top-left; 1,1 bottom-right)
+/// plus a pixel offset. Text size/wrap are pixels; entity transforms are ignored.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct ScreenText {
+    pub anchor: [f32; 2],
+    pub offset: [f32; 2],
+}
+impl Default for ScreenText {
+    fn default() -> Self {
+        Self {
+            anchor: [0.; 2],
+            offset: [24.; 2],
+        }
+    }
+}
+impl ScreenText {
+    pub fn validate(&self) -> Result<()> {
+        ensure!(
+            self.anchor
+                .iter()
+                .all(|v| v.is_finite() && (0.0..=1.0).contains(v)),
+            "HUD anchor must be in 0..1"
+        );
+        ensure!(
+            self.offset
+                .iter()
+                .all(|v| v.is_finite() && v.abs() <= 10000.),
+            "invalid HUD offset"
+        );
+        Ok(())
+    }
+}
+
 /// Flat, unlit text in the object's local XY plane. The anchor is the top of the
 /// text, horizontally aligned at the origin; rows advance toward local -Y.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TextRendering {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub screen: Option<ScreenText>,
     pub enabled: bool,
     pub layer: Layer,
     pub text: String,
     pub font: TextFont,
-    /// Font em size in local/world units, not screen pixels.
+    /// Font em size in local units, or logical pixels when screen-anchored.
     pub font_size: f32,
     pub max_width: Option<f32>,
     pub alignment: TextAlignment,
@@ -37,6 +73,7 @@ pub struct TextRendering {
 impl Default for TextRendering {
     fn default() -> Self {
         Self {
+            screen: None,
             enabled: true,
             layer: Layer::ThreeD,
             text: "Text".into(),
@@ -50,6 +87,9 @@ impl Default for TextRendering {
 }
 impl TextRendering {
     pub fn validate(&self) -> Result<()> {
+        if let Some(screen) = self.screen {
+            screen.validate()?;
+        }
         ensure!(self.text.len() <= 4096, "text exceeds 4096 UTF-8 bytes");
         ensure!(
             self.font_size.is_finite() && (0.001..=1000.).contains(&self.font_size),
